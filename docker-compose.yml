@@ -1,0 +1,24 @@
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: spendwise
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql+psycopg://user:password@db:5432/spendwise
+
+volumes:
+  postgres_data:
