@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from .schemas import RegisterRequest, LoginRequest, ProfileUpdate
-from .crud import register_user, login_user, get_profile, update_profile
+from .crud import register_user, login_user, get_profile, update_profile, logout_user
 from app.dependencies import get_current_user
 
 router = APIRouter()
@@ -42,3 +42,9 @@ async def update_me(body: ProfileUpdate, current_user=Depends(get_current_user))
         raise HTTPException(status_code=400, detail="No fields to update")
     result = update_profile(str(current_user.id), data)
     return result
+
+
+@router.post("/logout")
+async def logout(current_user=Depends(get_current_user)):
+    logout_user()
+    return {"message": "Logged out successfully"}

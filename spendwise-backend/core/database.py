@@ -10,4 +10,10 @@ supabase: Client = create_client(
     os.environ.get("SUPABASE_ANON_KEY")
 )
 
+# Admin client bypasses RLS — only use server-side
+supabase_admin: Client = create_client(
+    os.environ.get("SUPABASE_URL"),
+    os.environ.get("SUPABASE_SERVICE_KEY")
+)
+
 
