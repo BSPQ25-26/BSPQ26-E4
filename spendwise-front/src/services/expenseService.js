@@ -36,6 +36,17 @@ export async function createExpense(token, expenseData) {
   return data;
 }
 
+export async function updateExpense(token, id, expenseData) {
+  const res = await fetch(`${API_BASE}/expenses/${id}`, {
+    method: "PUT",
+    headers: authHeaders(token),
+    body: JSON.stringify(expenseData),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to update expense");
+  return data;
+}
+
 export async function deleteExpense(token, id) {
   const res = await fetch(`${API_BASE}/expenses/${id}`, {
     method: "DELETE",
