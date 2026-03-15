@@ -1,4 +1,4 @@
-from core.database import supabase
+from core.database import supabase, supabase_admin
 
 
 def register_user(email: str, password: str, full_name: str = None):
@@ -7,7 +7,7 @@ def register_user(email: str, password: str, full_name: str = None):
         profile_data = {"id": str(res.user.id), "email": email}
         if full_name:
             profile_data["full_name"] = full_name
-        supabase.table("user_profiles").insert(profile_data).execute()
+        supabase_admin.table("user_profiles").insert(profile_data).execute()
     return res
 
 
@@ -16,10 +16,17 @@ def login_user(email: str, password: str):
 
 
 def get_profile(user_id: str):
-    res = supabase.table("user_profiles").select("*").eq("id", user_id).single().execute()
-    return res.data
+    try:
+        res = supabase_admin.table("user_profiles").select("*").eq("id", user_id).single().execute()
+        return res.data
+    except Exception:
+        return None
 
 
 def update_profile(user_id: str, data: dict):
     res = supabase.table("user_profiles").update(data).eq("id", user_id).execute()
     return res.data[0] if res.data else None
+
+
+def logout_user():
+    supabase.auth.sign_out()
