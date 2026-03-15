@@ -1,5 +1,5 @@
 import calendar
-from core.database import supabase
+from core.database import supabase_admin as supabase
 
 
 def get_expenses(user_id: str, category_id: int = None, month: int = None, year: int = None):
