@@ -1,11 +1,9 @@
-
-
 RUN BACKEND
 ```
 cd spendwise-backend
 ```
 ```
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8080
 ```
 
 localhost:8080
@@ -20,5 +18,5 @@ if necessary:
     ``npm install`` or ``npm i``
     run project:
 ```
-npm run dev
+npm run devcd
 ```
