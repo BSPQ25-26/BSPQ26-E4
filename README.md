@@ -18,5 +18,5 @@ if necessary:
     ``npm install`` or ``npm i``
     run project:
 ```
-npm run devcd
+npm run dev
 ```
