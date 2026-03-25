@@ -1,11 +1,6 @@
 # SpendWise
 
-Personal expense tracker application with budget management and analytics.
-
-## Tech Stack
-
-- **Backend**: Python (FastAPI) + Supabase
-- **Frontend**: React + Vite + Tailwind CSS + Recharts
+SpendWise is a personal expense tracking application that helps you manage your finances. Track your daily expenses, categorize them, and visualize your spending patterns through interactive charts. Monitor your budget and gain insights into where your money goes each month.
 
 ## Setup
 
