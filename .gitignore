@@ -44,3 +44,6 @@ htmlcov/
 
 # Supabase
 .supabase/
+
+# Claude Code
+.claude/

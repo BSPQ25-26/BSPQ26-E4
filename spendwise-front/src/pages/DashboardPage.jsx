@@ -2,8 +2,22 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getCategories, getExpenses, createExpense, updateExpense, deleteExpense } from "../services/expenseService";
+import {
+  PieChart, Pie, Cell,
+  LineChart, Line,
+  XAxis, YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 
 const PAYMENT_METHODS = ["cash", "card", "transfer"];
+
+// Chart color palette matching SpendWise theme
+const CHART_COLORS = [
+  '#4F46E5', '#7C3AED', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#6B7280'
+];
 
 const today = () => new Date().toISOString().split("T")[0];
 
@@ -37,6 +51,9 @@ export default function DashboardPage() {
   const [editPaymentMethod, setEditPaymentMethod] = useState("cash");
   const [editError, setEditError] = useState("");
   const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // Tab state - controls which view is displayed
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   const fetchExpenses = useCallback(async () => {
     setLoadingExpenses(true);
@@ -132,8 +149,59 @@ export default function DashboardPage() {
     }
   }
 
+  // Transforms expenses array into category-grouped data for pie chart
+  const getCategoryData = () => {
+    const categoryMap = new Map();
+
+    expenses.forEach(expense => {
+      const categoryName = expense.categories?.name || "Uncategorized";
+      const categoryIcon = expense.categories?.icon || "💳";
+      const amount = parseFloat(expense.amount);
+
+      if (categoryMap.has(categoryName)) {
+        categoryMap.get(categoryName).value += amount;
+      } else {
+        categoryMap.set(categoryName, {
+          name: categoryName,
+          value: amount,
+          icon: categoryIcon
+        });
+      }
+    });
+
+    return Array.from(categoryMap.values());
+  };
+
+  // Transforms expenses array into day-grouped data for line chart
+  const getDailyData = () => {
+    const dailyMap = new Map();
+
+    expenses.forEach(expense => {
+      const date = expense.expense_date;
+      const amount = parseFloat(expense.amount);
+
+      if (dailyMap.has(date)) {
+        dailyMap.set(date, dailyMap.get(date) + amount);
+      } else {
+        dailyMap.set(date, amount);
+      }
+    });
+
+    return Array.from(dailyMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([date, total]) => ({
+        date: new Date(date).getDate(), // Day number (1-31)
+        fullDate: date,
+        amount: total
+      }));
+  };
+
+  // Only compute chart data when dashboard tab is active (performance optimization)
+  const categoryData = activeTab === "dashboard" ? getCategoryData() : [];
+  const dailyData = activeTab === "dashboard" ? getDailyData() : [];
+
   const monthTotal = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
-  const monthLabel = now.toLocaleString("default", { month: "long", year: "numeric" });
+  const monthLabel = now.toLocaleString("en-US", { month: "long", year: "numeric" });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -153,10 +221,142 @@ export default function DashboardPage() {
         </div>
       </nav>
 
-      <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200 bg-white">
+        <nav className="max-w-7xl mx-auto px-4 flex gap-6">
+          <button
+            onClick={() => setActiveTab("dashboard")}
+            className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+              activeTab === "dashboard"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab("add-expense")}
+            className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+              activeTab === "add-expense"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Add Expense
+          </button>
+        </nav>
+      </div>
 
-        {/* Add Expense Form */}
-        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+      <main className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+
+        {/* Tab 1 Content - Dashboard with Charts */}
+        {activeTab === "dashboard" && (
+          <>
+            {/* Month Total Summary */}
+            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-base font-semibold text-gray-900 capitalize">
+                  {monthLabel}
+                </h2>
+                <span className="text-2xl font-bold text-indigo-600">
+                  {monthTotal.toFixed(2)} {user?.currency || "EUR"}
+                </span>
+              </div>
+            </section>
+
+            {loadingExpenses ? (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12">
+                <p className="text-sm text-gray-400 text-center">Loading charts...</p>
+              </div>
+            ) : expenses.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12">
+                <p className="text-sm text-gray-400 text-center">
+                  No expenses yet. Add your first expense to see charts.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Pie Chart - Expenses by Category */}
+                <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                  <h3 className="text-base font-semibold text-gray-900 mb-4">
+                    Expenses by Category
+                  </h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        label={(entry) => `${entry.icon} ${entry.name}`}
+                        labelLine={true}
+                      >
+                        {categoryData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={CHART_COLORS[index % CHART_COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value) => `${value.toFixed(2)} ${user?.currency || 'EUR'}`}
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </section>
+
+                {/* Line Chart - Daily Expenses */}
+                <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                  <h3 className="text-base font-semibold text-gray-900 mb-4">
+                    Daily Expenses - {monthLabel}
+                  </h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={dailyData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis
+                        dataKey="date"
+                        label={{ value: 'Day of Month', position: 'insideBottom', offset: -5 }}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis
+                        label={{
+                          value: `Amount (${user?.currency || 'EUR'})`,
+                          angle: -90,
+                          position: 'insideLeft'
+                        }}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <Tooltip
+                        labelFormatter={(day) => `Day ${day}`}
+                        formatter={(value) => [
+                          `${value.toFixed(2)} ${user?.currency || 'EUR'}`,
+                          'Amount'
+                        ]}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="amount"
+                        stroke="#4F46E5"
+                        strokeWidth={2}
+                        dot={{ fill: '#4F46E5', r: 4 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </section>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Tab 2 Content - Add Expense (keep existing functionality) */}
+        {activeTab === "add-expense" && (
+          <div className="max-w-2xl mx-auto space-y-6">
+            {/* Add Expense Form - UNCHANGED */}
+            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-5">Add expense</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -304,6 +504,8 @@ export default function DashboardPage() {
             </ul>
           )}
         </section>
+          </div>
+        )}
       </main>
 
       {/* Edit Expense Modal */}
