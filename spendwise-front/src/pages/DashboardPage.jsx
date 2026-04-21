@@ -33,6 +33,11 @@ export default function DashboardPage() {
   const [expenses, setExpenses] = useState([]);
   const [loadingExpenses, setLoadingExpenses] = useState(true);
 
+  // Filter state
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   // Form state
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -58,19 +63,31 @@ export default function DashboardPage() {
   const fetchExpenses = useCallback(async () => {
     setLoadingExpenses(true);
     try {
-      const data = await getExpenses(token, { month, year });
+      const filters = {};
+      if (selectedCategory) filters.category_id = selectedCategory;
+      if (startDate) filters.start_date = startDate;
+      if (endDate) filters.end_date = endDate;
+      if (!startDate && !endDate) {
+        filters.month = month;
+        filters.year = year;
+      }
+      const data = await getExpenses(token, filters);
       setExpenses(data);
     } catch {
       // silently fail — list stays empty
     } finally {
       setLoadingExpenses(false);
     }
-  }, [token, month, year]);
+  }, [token, month, year, selectedCategory, startDate, endDate]);
 
   useEffect(() => {
     getCategories(token).then(setCategories).catch(() => {});
     fetchExpenses();
   }, [token, fetchExpenses]);
+
+  useEffect(() => {
+    fetchExpenses();
+  }, [selectedCategory, startDate, endDate, fetchExpenses]);
 
   async function handleLogout() {
     await logout();
@@ -190,7 +207,7 @@ export default function DashboardPage() {
     return Array.from(dailyMap.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([date, total]) => ({
-        date: new Date(date).getDate(), // Day number (1-31)
+        date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         fullDate: date,
         amount: total
       }));
@@ -201,7 +218,10 @@ export default function DashboardPage() {
   const dailyData = activeTab === "dashboard" ? getDailyData() : [];
 
   const monthTotal = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
-  const monthLabel = now.toLocaleString("en-US", { month: "long", year: "numeric" });
+  const monthLabel = startDate && endDate ? `${startDate} to ${endDate}` :
+                     startDate ? `From ${startDate}` :
+                     endDate ? `Until ${endDate}` :
+                     now.toLocaleString("en-US", { month: "long", year: "numeric" });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -261,6 +281,58 @@ export default function DashboardPage() {
                 <span className="text-2xl font-bold text-indigo-600">
                   {monthTotal.toFixed(2)} {user?.currency || "EUR"}
                 </span>
+              </div>
+            </section>
+
+            {/* Filters */}
+            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <h3 className="text-base font-semibold text-gray-900 mb-4">Filters</h3>
+              <div className="row g-3">
+                <div className="col-md-4">
+                  <label className="form-label">Category</label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="form-select"
+                  >
+                    <option value="">All Categories</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.icon} {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">Start Date</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="form-control"
+                  />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">End Date</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="form-control"
+                  />
+                </div>
+              </div>
+              <div className="mt-3">
+                <button
+                  onClick={() => {
+                    setSelectedCategory("");
+                    setStartDate("");
+                    setEndDate("");
+                  }}
+                  className="btn btn-outline-secondary btn-sm"
+                >
+                  Clear Filters
+                </button>
               </div>
             </section>
 
