@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getCategories, getExpenses, createExpense, updateExpense, deleteExpense } from "../services/expenseService";
+import { getCategories, getExpenses, createExpense, updateExpense, deleteExpense, getDashboardSummary } from "../services/expenseService";
 import {
   PieChart, Pie, Cell,
   LineChart, Line,
@@ -26,12 +26,15 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   const now = new Date();
-  const [month] = useState(now.getMonth() + 1);
-  const [year] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getFullYear());
 
   const [categories, setCategories] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [loadingExpenses, setLoadingExpenses] = useState(true);
+  
+  const [summaryData, setSummaryData] = useState(null);
+  const [loadingSummary, setLoadingSummary] = useState(true);
 
   // Filter state
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -80,10 +83,23 @@ export default function DashboardPage() {
     }
   }, [token, month, year, selectedCategory, startDate, endDate]);
 
+  const fetchSummary = useCallback(async () => {
+    setLoadingSummary(true);
+    try {
+      const data = await getDashboardSummary(token, { month, year });
+      setSummaryData(data);
+    } catch {
+      // silently fail
+    } finally {
+      setLoadingSummary(false);
+    }
+  }, [token, month, year]);
+
   useEffect(() => {
     getCategories(token).then(setCategories).catch(() => {});
     fetchExpenses();
-  }, [token, fetchExpenses]);
+    fetchSummary();
+  }, [token, fetchExpenses, fetchSummary]);
 
   useEffect(() => {
     fetchExpenses();
@@ -272,7 +288,7 @@ export default function DashboardPage() {
         {/* Tab 1 Content - Dashboard with Charts */}
         {activeTab === "dashboard" && (
           <>
-            {/* Month Total Summary */}
+            {/* Month Total Summary (Filtered) */}
             <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
               <div className="flex items-baseline justify-between">
                 <h2 className="text-base font-semibold text-gray-900 capitalize">
@@ -283,6 +299,48 @@ export default function DashboardPage() {
                 </span>
               </div>
             </section>
+
+            {/* API Summary Cards */}
+            <div>
+              <div className="flex items-center justify-between mb-3 px-1">
+                <h3 className="text-sm font-semibold text-gray-700">Official Backend Summary</h3>
+                <div className="flex gap-2">
+                  <select 
+                    value={month} 
+                    onChange={(e) => setMonth(parseInt(e.target.value))}
+                    className="border border-gray-300 rounded-md text-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
+                      const date = new Date(2000, m - 1, 1);
+                      return <option key={m} value={m}>{date.toLocaleString('default', { month: 'long' })}</option>;
+                    })}
+                  </select>
+                  <select 
+                    value={year} 
+                    onChange={(e) => setYear(parseInt(e.target.value))}
+                    className="border border-gray-300 rounded-md text-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Total Monthly Spending</h3>
+                  <div className="text-2xl font-bold text-indigo-600">
+                    {loadingSummary ? "..." : `${summaryData?.total_monthly_spending?.toFixed(2) || "0.00"} ${user?.currency || "EUR"}`}
+                  </div>
+                </section>
+                <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Average Daily Costs</h3>
+                  <div className="text-2xl font-bold text-emerald-600">
+                    {loadingSummary ? "..." : `${summaryData?.average_daily_costs?.toFixed(2) || "0.00"} ${user?.currency || "EUR"}`}
+                  </div>
+                </section>
+              </div>
+            </div>
 
             {/* Filters */}
             <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">

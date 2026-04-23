@@ -60,3 +60,16 @@ export async function deleteExpense(token, id) {
     throw new Error(data.detail || "Failed to delete expense");
   }
 }
+
+export async function getDashboardSummary(token, { month, year } = {}) {
+  const params = new URLSearchParams();
+  if (month) params.set("month", month);
+  if (year) params.set("year", year);
+  
+  const res = await fetch(`${API_BASE}/dashboard/summary?${params}`, {
+    headers: authHeaders(token),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to fetch dashboard summary");
+  return data;
+}
