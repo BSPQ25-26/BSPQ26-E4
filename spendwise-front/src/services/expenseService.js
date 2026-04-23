@@ -13,10 +13,13 @@ export async function getCategories(token) {
   return data;
 }
 
-export async function getExpenses(token, { month, year } = {}) {
+export async function getExpenses(token, { month, year, category_id, start_date, end_date } = {}) {
   const params = new URLSearchParams();
   if (month) params.set("month", month);
   if (year) params.set("year", year);
+  if (category_id) params.set("category_id", category_id);
+  if (start_date) params.set("start_date", start_date);
+  if (end_date) params.set("end_date", end_date);
   const res = await fetch(`${API_BASE}/expenses/?${params}`, {
     headers: authHeaders(token),
   });
@@ -68,4 +71,17 @@ export async function deleteExpense(token, id) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.detail || "Failed to delete expense");
   }
+}
+
+export async function getDashboardSummary(token, { month, year } = {}) {
+  const params = new URLSearchParams();
+  if (month) params.set("month", month);
+  if (year) params.set("year", year);
+  
+  const res = await fetch(`${API_BASE}/dashboard/summary?${params}`, {
+    headers: authHeaders(token),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to fetch dashboard summary");
+  return data;
 }

@@ -33,9 +33,11 @@ async def list_expenses(
     category_id: Optional[int] = Query(None),
     month: Optional[int] = Query(None),
     year: Optional[int] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
     current_user=Depends(get_current_user),
 ):
-    return get_expenses(str(current_user.id), category_id, month, year)
+    return get_expenses(str(current_user.id), category_id, month, year, start_date, end_date)
 
 
 @router.post("/", status_code=201)
