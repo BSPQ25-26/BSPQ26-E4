@@ -8,3 +8,8 @@ passlib[bcrypt]==1.7.4
 python-multipart==0.0.9
 supabase
 email-validator>=2.0.0
+
+# Testing Dependencies
+pytest>=7.4.0
+httpx>=0.27.0
+pytest-cov>=4.1.0
