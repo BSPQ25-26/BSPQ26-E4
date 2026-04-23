@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getCategories, getExpenses, createExpense, updateExpense, deleteExpense } from "../services/expenseService";
+import {
+  getCategories,
+  getExpenses,
+  getDashboardAnalytics,
+  createExpense,
+  updateExpense,
+  deleteExpense,
+} from "../services/expenseService";
 import {
   PieChart, Pie, Cell,
   LineChart, Line,
@@ -20,6 +27,11 @@ const CHART_COLORS = [
 ];
 
 const today = () => new Date().toISOString().split("T")[0];
+const emptyAnalytics = {
+  month_total: 0,
+  category_breakdown: [],
+  daily_breakdown: [],
+};
 
 export default function DashboardPage() {
   const { user, token, logout } = useAuth();
@@ -31,7 +43,9 @@ export default function DashboardPage() {
 
   const [categories, setCategories] = useState([]);
   const [expenses, setExpenses] = useState([]);
+  const [analytics, setAnalytics] = useState(emptyAnalytics);
   const [loadingExpenses, setLoadingExpenses] = useState(true);
+  const [dashboardError, setDashboardError] = useState("");
 
   // Form state
   const [amount, setAmount] = useState("");
@@ -55,22 +69,38 @@ export default function DashboardPage() {
   // Tab state - controls which view is displayed
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  const fetchExpenses = useCallback(async () => {
+  const loadDashboardData = useCallback(async () => {
     setLoadingExpenses(true);
-    try {
-      const data = await getExpenses(token, { month, year });
-      setExpenses(data);
-    } catch {
-      // silently fail — list stays empty
-    } finally {
-      setLoadingExpenses(false);
+    setDashboardError("");
+
+    const [expensesResult, analyticsResult] = await Promise.allSettled([
+      getExpenses(token, { month, year }),
+      getDashboardAnalytics(token, { month, year }),
+    ]);
+
+    if (expensesResult.status === "fulfilled") {
+      setExpenses(expensesResult.value);
+    } else {
+      setExpenses([]);
     }
+
+    if (analyticsResult.status === "fulfilled") {
+      setAnalytics(analyticsResult.value);
+    } else {
+      setAnalytics(emptyAnalytics);
+    }
+
+    if (expensesResult.status === "rejected" || analyticsResult.status === "rejected") {
+      setDashboardError("Some dashboard data could not be loaded.");
+    }
+
+    setLoadingExpenses(false);
   }, [token, month, year]);
 
   useEffect(() => {
     getCategories(token).then(setCategories).catch(() => {});
-    fetchExpenses();
-  }, [token, fetchExpenses]);
+    loadDashboardData();
+  }, [token, loadDashboardData]);
 
   async function handleLogout() {
     await logout();
@@ -94,7 +124,7 @@ export default function DashboardPage() {
       setExpenseDate(today());
       setCategoryId("");
       setPaymentMethod("cash");
-      await fetchExpenses();
+      await loadDashboardData();
     } catch (err) {
       setFormError(err.message);
     } finally {
@@ -105,7 +135,7 @@ export default function DashboardPage() {
   async function handleDelete(id) {
     try {
       await deleteExpense(token, id);
-      setExpenses((prev) => prev.filter((e) => e.id !== id));
+      await loadDashboardData();
     } catch {
       // silently ignore
     }
@@ -141,6 +171,7 @@ export default function DashboardPage() {
       setExpenses((prev) =>
         prev.map((ex) => (ex.id === updated.id ? { ...ex, ...updated } : ex))
       );
+      await loadDashboardData();
       closeEdit();
     } catch (err) {
       setEditError(err.message);
@@ -149,58 +180,10 @@ export default function DashboardPage() {
     }
   }
 
-  // Transforms expenses array into category-grouped data for pie chart
-  const getCategoryData = () => {
-    const categoryMap = new Map();
+  const categoryData = activeTab === "dashboard" ? analytics.category_breakdown : [];
+  const dailyData = activeTab === "dashboard" ? analytics.daily_breakdown : [];
 
-    expenses.forEach(expense => {
-      const categoryName = expense.categories?.name || "Uncategorized";
-      const categoryIcon = expense.categories?.icon || "💳";
-      const amount = parseFloat(expense.amount);
-
-      if (categoryMap.has(categoryName)) {
-        categoryMap.get(categoryName).value += amount;
-      } else {
-        categoryMap.set(categoryName, {
-          name: categoryName,
-          value: amount,
-          icon: categoryIcon
-        });
-      }
-    });
-
-    return Array.from(categoryMap.values());
-  };
-
-  // Transforms expenses array into day-grouped data for line chart
-  const getDailyData = () => {
-    const dailyMap = new Map();
-
-    expenses.forEach(expense => {
-      const date = expense.expense_date;
-      const amount = parseFloat(expense.amount);
-
-      if (dailyMap.has(date)) {
-        dailyMap.set(date, dailyMap.get(date) + amount);
-      } else {
-        dailyMap.set(date, amount);
-      }
-    });
-
-    return Array.from(dailyMap.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, total]) => ({
-        date: new Date(date).getDate(), // Day number (1-31)
-        fullDate: date,
-        amount: total
-      }));
-  };
-
-  // Only compute chart data when dashboard tab is active (performance optimization)
-  const categoryData = activeTab === "dashboard" ? getCategoryData() : [];
-  const dailyData = activeTab === "dashboard" ? getDailyData() : [];
-
-  const monthTotal = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+  const monthTotal = analytics.month_total;
   const monthLabel = now.toLocaleString("en-US", { month: "long", year: "numeric" });
 
   return (
@@ -264,6 +247,12 @@ export default function DashboardPage() {
               </div>
             </section>
 
+            {dashboardError && (
+              <section className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+                <p className="text-sm text-amber-800">{dashboardError}</p>
+              </section>
+            )}
+
             {loadingExpenses ? (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12">
                 <p className="text-sm text-gray-400 text-center">Loading charts...</p>
@@ -290,13 +279,13 @@ export default function DashboardPage() {
                         cx="50%"
                         cy="50%"
                         outerRadius={100}
-                        label={(entry) => `${entry.icon} ${entry.name}`}
+                        label={(entry) => entry.icon ? `${entry.icon} ${entry.name}` : entry.name}
                         labelLine={true}
                       >
                         {categoryData.map((entry, index) => (
                           <Cell
                             key={`cell-${index}`}
-                            fill={CHART_COLORS[index % CHART_COLORS.length]}
+                            fill={entry.color || CHART_COLORS[index % CHART_COLORS.length]}
                           />
                         ))}
                       </Pie>
@@ -317,7 +306,7 @@ export default function DashboardPage() {
                     <LineChart data={dailyData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                       <XAxis
-                        dataKey="date"
+                        dataKey="day"
                         label={{ value: 'Day of Month', position: 'insideBottom', offset: -5 }}
                         tick={{ fontSize: 12 }}
                       />
@@ -330,7 +319,7 @@ export default function DashboardPage() {
                         tick={{ fontSize: 12 }}
                       />
                       <Tooltip
-                        labelFormatter={(day) => `Day ${day}`}
+                        labelFormatter={(day, payload) => payload?.[0]?.payload?.date || `Day ${day}`}
                         formatter={(value) => [
                           `${value.toFixed(2)} ${user?.currency || 'EUR'}`,
                           'Amount'
