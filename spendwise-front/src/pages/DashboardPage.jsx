@@ -332,7 +332,7 @@ export default function DashboardPage() {
             {/* Backend Summary */}
             <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-700">Official Backend Summary</h3>
+                <h3 className="text-sm font-semibold text-gray-700">Quick Stats</h3>
                 <div className="flex gap-2">
                   <select
                     value={month}
