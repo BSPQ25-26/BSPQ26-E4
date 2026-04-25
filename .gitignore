@@ -36,6 +36,9 @@ Thumbs.db
 .coverage
 htmlcov/
 
+# Sphinx documentation build output
+spendwise-backend/docs/_build/
+
 # Logs
 *.log
 
