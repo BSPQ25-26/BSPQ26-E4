@@ -218,6 +218,11 @@ export default function DashboardPage() {
   const dailyData = activeTab === "dashboard" ? getDailyData() : [];
 
   const monthTotal = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+  const selectedRangeDays = startDate && endDate
+    ? Math.max(1, Math.round((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1)
+    : now.getDate();
+  const monthlyAverage = expenses.length ? monthTotal / expenses.length : 0;
+  const dailyAverage = monthTotal / selectedRangeDays;
   const monthLabel = startDate && endDate ? `${startDate} to ${endDate}` :
                      startDate ? `From ${startDate}` :
                      endDate ? `Until ${endDate}` :
@@ -281,6 +286,43 @@ export default function DashboardPage() {
                 <span className="text-2xl font-bold text-indigo-600">
                   {monthTotal.toFixed(2)} {user?.currency || "EUR"}
                 </span>
+              </div>
+            </section>
+
+            {/* Quick Stats */}
+            <section className="row g-3">
+              <div className="col-md-4">
+                <div className="card shadow-sm h-100">
+                  <div className="card-body">
+                    <h5 className="card-title mb-2">Total Spent</h5>
+                    <p className="card-text display-6 fw-bold mb-0">
+                      {monthTotal.toFixed(2)} {user?.currency || "EUR"}
+                    </p>
+                    <p className="text-muted mb-0">Current period total</p>
+                  </div>
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="card shadow-sm h-100">
+                  <div className="card-body">
+                    <h5 className="card-title mb-2">Avg. per Expense</h5>
+                    <p className="card-text display-6 fw-bold mb-0">
+                      {monthlyAverage.toFixed(2)} {user?.currency || "EUR"}
+                    </p>
+                    <p className="text-muted mb-0">Based on {expenses.length} items</p>
+                  </div>
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="card shadow-sm h-100">
+                  <div className="card-body">
+                    <h5 className="card-title mb-2">Avg. per Day</h5>
+                    <p className="card-text display-6 fw-bold mb-0">
+                      {dailyAverage.toFixed(2)} {user?.currency || "EUR"}
+                    </p>
+                    <p className="text-muted mb-0">Over {selectedRangeDays} days</p>
+                  </div>
+                </div>
               </div>
             </section>
 
