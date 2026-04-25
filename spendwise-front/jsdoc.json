@@ -1,0 +1,43 @@
+{
+  "//": "JSDoc configuration for the SpendWise frontend.",
+  "//doc": "Reads JS/JSX sources under src/ and renders an HTML site under docs/_build/.",
+  "//run": "Build with `npm run docs`. Clean the output with `npm run docs:clean`.",
+
+  "tags": {
+    "allowUnknownTags": true,
+    "dictionaries": ["jsdoc", "closure"]
+  },
+
+  "source": {
+    "include": ["src"],
+    "includePattern": "\\.(js|jsx)$",
+    "excludePattern": "(node_modules|docs|_build)"
+  },
+
+  "plugins": [
+    "plugins/markdown"
+  ],
+
+  "opts": {
+    "destination": "./docs/_build/",
+    "encoding": "utf8",
+    "recurse": true,
+    "private": false,
+    "readme": "./docs/README.md"
+  },
+
+  "markdown": {
+    "//": "Allow GitHub-flavoured Markdown in docstrings (lists, code fences, tables).",
+    "parser": "gfm",
+    "hardwrap": false
+  },
+
+  "templates": {
+    "cleverLinks": true,
+    "monospaceLinks": false,
+    "default": {
+      "outputSourceFiles": true,
+      "includeDate": false
+    }
+  }
+}

@@ -1,3 +1,20 @@
+/**
+ * @file Dashboard page.
+ *
+ * Main authenticated screen of the application. Combines two tabs:
+ *
+ * - **Dashboard**: quick stats (total monthly spending and average
+ *   daily costs), filter controls (category and date range) and two
+ *   charts (pie by category, line by day).
+ * - **Add Expense**: create form for new expenses plus a list of the
+ *   filtered expenses with inline edit and delete actions.
+ *
+ * The page reads its data from the auth and expense service modules and
+ * keeps everything in local component state — there is no global store.
+ *
+ * @module pages/DashboardPage
+ */
+
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -20,19 +37,68 @@ import {
   ResponsiveContainer
 } from "recharts";
 
+/**
+ * Payment methods accepted by the form. Kept in sync with the backend's
+ * default `payment_method` values.
+ *
+ * @type {string[]}
+ */
 const PAYMENT_METHODS = ["cash", "card", "transfer"];
 
+/**
+ * Fallback palette for the category pie chart slices. Used in the order
+ * the slices appear when a category does not specify its own colour.
+ *
+ * @type {string[]}
+ */
 const CHART_COLORS = [
   "#4F46E5", "#7C3AED", "#EC4899", "#F59E0B", "#10B981", "#3B82F6", "#6B7280"
 ];
 
+/**
+ * Return today's date as an ISO `YYYY-MM-DD` string. Used as the default
+ * value for the "expense date" inputs.
+ *
+ * @returns {string}
+ */
 const today = () => new Date().toISOString().split("T")[0];
+
+/**
+ * Analytics shape used while we are still loading or when the request
+ * fails, so the rest of the component can keep iterating over the same
+ * keys without `undefined` checks.
+ *
+ * @type {{ month_total: number, category_breakdown: Array, daily_breakdown: Array }}
+ */
 const emptyAnalytics = {
   month_total: 0,
   category_breakdown: [],
   daily_breakdown: [],
 };
 
+/**
+ * Dashboard page component.
+ *
+ * Owns a fairly large amount of local state because it powers both the
+ * stats panel and the create / edit / delete flow for expenses:
+ *
+ * - **Filters**: month/year for the summary, plus category and date
+ *   range for the expense list and analytics.
+ * - **Async data**: categories, expenses, analytics and summary, each
+ *   with its own loading flag and error fallback.
+ * - **Forms**: separate state for the inline "Add expense" form and for
+ *   the modal "Edit expense" form, including submission flags.
+ * - **UI**: which tab is active (`dashboard` vs `add-expense`).
+ *
+ * Side effects:
+ *
+ * - Fetches categories once on mount.
+ * - Re-fetches expenses + analytics whenever any filter changes.
+ * - Re-fetches the summary whenever the month or year changes.
+ * - Calls the auth context's `logout` and navigates back to `/login`.
+ *
+ * @returns {JSX.Element}
+ */
 export default function DashboardPage() {
   const { user, token, logout } = useAuth();
   const navigate = useNavigate();
@@ -72,6 +138,14 @@ export default function DashboardPage() {
 
   const [activeTab, setActiveTab] = useState("dashboard");
 
+  /**
+   * Reload the expenses and the analytics payload using the current
+   * filter state. Both requests are run with `Promise.allSettled` so a
+   * failure in one does not blank out the other; errors are surfaced
+   * via the inline `dashboardError` banner.
+   *
+   * @returns {Promise<void>}
+   */
   const loadDashboardData = useCallback(async () => {
     setLoadingExpenses(true);
     setDashboardError("");
@@ -109,6 +183,12 @@ export default function DashboardPage() {
     setLoadingExpenses(false);
   }, [token, month, year, selectedCategory, startDate, endDate]);
 
+  /**
+   * Fetch the monthly summary (total + daily average) for the currently
+   * selected month and year. Resets to `null` on failure.
+   *
+   * @returns {Promise<void>}
+   */
   const fetchSummary = useCallback(async () => {
     setLoadingSummary(true);
     try {
@@ -133,11 +213,26 @@ export default function DashboardPage() {
     fetchSummary();
   }, [fetchSummary]);
 
+  /**
+   * Sign the user out (both server-side and locally via the auth
+   * context) and bounce back to the login page.
+   *
+   * @returns {Promise<void>}
+   */
   async function handleLogout() {
     await logout();
     navigate("/login");
   }
 
+  /**
+   * Submit handler for the "Add expense" form. Builds the payload from
+   * the form state, calls the API, resets the inputs, and refreshes
+   * both the dashboard data and the summary so the new expense is
+   * visible immediately.
+   *
+   * @param {Event} e
+   * @returns {Promise<void>}
+   */
   async function handleSubmit(e) {
     e.preventDefault();
     setFormError("");
@@ -164,16 +259,30 @@ export default function DashboardPage() {
     }
   }
 
+  /**
+   * Delete an expense by id and refresh the dashboard data. Errors are
+   * intentionally swallowed: the delete is idempotent on the backend
+   * and a transient failure should not block the UI.
+   *
+   * @param {number} id
+   * @returns {Promise<void>}
+   */
   async function handleDelete(id) {
     try {
       await deleteExpense(token, id);
       await loadDashboardData();
       await fetchSummary();
     } catch {
-      // silently ignore
+      // Best-effort: swallow network glitches so the UI stays responsive.
     }
   }
 
+  /**
+   * Open the edit modal for a given expense, prefilling the form with
+   * its current values.
+   *
+   * @param {Expense} expense
+   */
   function openEdit(expense) {
     setEditingExpense(expense);
     setEditAmount(String(parseFloat(expense.amount)));
@@ -184,11 +293,24 @@ export default function DashboardPage() {
     setEditError("");
   }
 
+  /**
+   * Close the edit modal without persisting any changes.
+   */
   function closeEdit() {
     setEditingExpense(null);
     setEditError("");
   }
 
+  /**
+   * Submit handler for the "Edit expense" form. Sends the patched
+   * fields to the backend, applies the response into the local
+   * `expenses` array (so the list updates instantly even before the
+   * full refetch resolves), then refreshes the dashboard and closes
+   * the modal.
+   *
+   * @param {Event} e
+   * @returns {Promise<void>}
+   */
   async function handleUpdate(e) {
     e.preventDefault();
     setEditError("");

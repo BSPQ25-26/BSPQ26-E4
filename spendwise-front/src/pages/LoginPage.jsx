@@ -1,8 +1,30 @@
+/**
+ * @file Login page.
+ *
+ * Renders the email/password form used by existing users to sign in,
+ * delegates the actual API call to the {@link module:services/authService}
+ * module, stores the resulting session via the {@link useAuth} context,
+ * and navigates to `/dashboard` on success.
+ *
+ * @module pages/LoginPage
+ */
+
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { login } from "../services/authService";
 import { useAuth } from "../context/AuthContext";
 
+/**
+ * Login page component. Holds local form state for email and password,
+ * surfaces backend errors inline, and disables the submit button while
+ * a request is in flight.
+ *
+ * On successful login the access token plus a minimal user object
+ * (`{email, id}`) are pushed into the auth context — the full profile
+ * is then refetched by `AuthProvider` via the `/auth/me` endpoint.
+ *
+ * @returns {JSX.Element}
+ */
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -11,6 +33,14 @@ export default function LoginPage() {
   const { login: setAuth } = useAuth();
   const navigate = useNavigate();
 
+  /**
+   * Handle the form submit event: call the auth service, hand the
+   * session to the context, and navigate on success. Any thrown error
+   * is rendered inline in red.
+   *
+   * @param {Event} e
+   * @returns {Promise<void>}
+   */
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");

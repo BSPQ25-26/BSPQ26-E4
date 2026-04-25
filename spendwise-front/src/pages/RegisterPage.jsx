@@ -1,7 +1,30 @@
+/**
+ * @file Registration page.
+ *
+ * Collects the email, password and (optional) full name needed to
+ * create a new account, delegates the call to
+ * {@link module:services/authService}, shows a success notice, and
+ * redirects the user to the login page after a short delay so they
+ * can read the email-verification reminder.
+ *
+ * @module pages/RegisterPage
+ */
+
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { register } from "../services/authService";
 
+/**
+ * Registration page component. Holds local state for the form fields,
+ * loading state, and either an error message or a success message
+ * displayed inline below the form.
+ *
+ * After a successful submission the page waits 3 seconds and then
+ * routes to `/login`, giving the user a chance to read the "check
+ * your email" notice.
+ *
+ * @returns {JSX.Element}
+ */
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -11,6 +34,14 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  /**
+   * Submit handler: calls the registration endpoint, then either
+   * surfaces the backend error inline or shows a success message and
+   * schedules the navigation to `/login`.
+   *
+   * @param {Event} e
+   * @returns {Promise<void>}
+   */
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
