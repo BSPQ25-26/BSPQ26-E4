@@ -275,54 +275,6 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto px-4 py-8 space-y-6">
         {activeTab === "dashboard" && (
           <>
-            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-              <div className="flex items-baseline justify-between">
-                <h2 className="text-base font-semibold text-gray-900 capitalize">
-                  {monthLabel}
-                </h2>
-                <span className="text-2xl font-bold text-indigo-600">
-                  {monthTotal.toFixed(2)} {user?.currency || "EUR"}
-                </span>
-              </div>
-            </section>
-
-            {/* Quick Stats */}
-            <section className="row g-3">
-              <div className="col-md-4">
-                <div className="card shadow-sm h-100">
-                  <div className="card-body">
-                    <h5 className="card-title mb-2">Total Spent</h5>
-                    <p className="card-text display-6 fw-bold mb-0">
-                      {monthTotal.toFixed(2)} {user?.currency || "EUR"}
-                    </p>
-                    <p className="text-muted mb-0">Current period total</p>
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="card shadow-sm h-100">
-                  <div className="card-body">
-                    <h5 className="card-title mb-2">Avg. per Expense</h5>
-                    <p className="card-text display-6 fw-bold mb-0">
-                      {monthlyAverage.toFixed(2)} {user?.currency || "EUR"}
-                    </p>
-                    <p className="text-muted mb-0">Based on {expenses.length} items</p>
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="card shadow-sm h-100">
-                  <div className="card-body">
-                    <h5 className="card-title mb-2">Avg. per Day</h5>
-                    <p className="card-text display-6 fw-bold mb-0">
-                      {dailyAverage.toFixed(2)} {user?.currency || "EUR"}
-                    </p>
-                    <p className="text-muted mb-0">Over {selectedRangeDays} days</p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
             {dashboardError && (
               <section className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
                 <p className="text-sm text-amber-800">{dashboardError}</p>
