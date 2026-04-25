@@ -5,6 +5,7 @@ from services.expenses.routes import router as expenses_router
 from services.categories.routes import router as categories_router
 from services.budgets.routes import router as budgets_router
 from services.alerts.routes import router as alerts_router
+from services.dashboard.routes import router as dashboard_router
 
 
 app = FastAPI(title="SpendWise API", version="1.0.0")
@@ -28,6 +29,7 @@ app.include_router(expenses_router,   prefix="/api/v1/expenses",   tags=["expens
 app.include_router(categories_router, prefix="/api/v1/categories", tags=["categories"])
 app.include_router(budgets_router,    prefix="/api/v1/budgets",    tags=["budgets"])
 app.include_router(alerts_router,     prefix="/api/v1/alerts",     tags=["alerts"])
+app.include_router(dashboard_router,  prefix="/api/v1/dashboard",  tags=["dashboard"])
 
 
 if __name__ == "__main__":

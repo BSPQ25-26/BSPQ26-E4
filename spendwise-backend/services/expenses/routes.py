@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 from core.database import supabase
 from app.dependencies import get_current_user
-from .schemas import ExpenseCreate, ExpenseUpdate
-from .crud import get_expenses, create_expense, update_expense, delete_expense
+from .schemas import ExpenseAnalyticsResponse, ExpenseCreate, ExpenseUpdate
+from .crud import get_expenses, get_expense_analytics, create_expense, update_expense, delete_expense
 
 router = APIRouter()
 
@@ -16,6 +16,16 @@ async def db_health():
         return {"status": "OK", "supabase_connected": True, "message": "Expenses service + DB OK!"}
     except Exception as e:
         return {"status": "ERROR", "error": str(e)}
+
+
+@router.get("/analytics", response_model=ExpenseAnalyticsResponse)
+async def expense_analytics(
+    category_id: Optional[int] = Query(None),
+    month: Optional[int] = Query(None),
+    year: Optional[int] = Query(None),
+    current_user=Depends(get_current_user),
+):
+    return get_expense_analytics(str(current_user.id), category_id, month, year)
 
 
 @router.get("/")
