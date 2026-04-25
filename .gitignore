@@ -39,6 +39,9 @@ htmlcov/
 # Sphinx documentation build output
 spendwise-backend/docs/_build/
 
+# JSDoc documentation build output
+spendwise-front/docs/_build/
+
 # Logs
 *.log
 
