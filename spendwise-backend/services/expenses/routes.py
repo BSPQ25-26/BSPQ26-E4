@@ -52,6 +52,8 @@ async def expense_analytics(
     category_id: Optional[int] = Query(None),
     month: Optional[int] = Query(None),
     year: Optional[int] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
     current_user=Depends(get_current_user),
 ):
     """Return aggregated analytics for the current user.
@@ -60,13 +62,22 @@ async def expense_analytics(
         category_id: Optional category filter.
         month: Optional month (1-12), used together with ``year``.
         year: Optional year, used together with ``month``.
+        start_date: Optional ISO start date (inclusive).
+        end_date: Optional ISO end date (inclusive).
         current_user: Injected authenticated user.
 
     Returns:
         ExpenseAnalyticsResponse: Totals, category breakdown, and daily
         breakdown for the requested period.
     """
-    return get_expense_analytics(str(current_user.id), category_id, month, year)
+    return get_expense_analytics(
+        str(current_user.id),
+        category_id,
+        month,
+        year,
+        start_date,
+        end_date,
+    )
 
 
 @router.get("/")

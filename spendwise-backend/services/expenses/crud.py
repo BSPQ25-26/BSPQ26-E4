@@ -116,6 +116,8 @@ def get_expense_analytics(
     category_id: int = None,
     month: int = None,
     year: int = None,
+    start_date: str = None,
+    end_date: str = None,
 ):
     """Compute aggregated analytics over the user's expenses.
 
@@ -134,7 +136,7 @@ def get_expense_analytics(
     Returns:
         dict: A payload matching :class:`schemas.ExpenseAnalyticsResponse`.
     """
-    expenses = get_expenses(user_id, category_id, month, year)
+    expenses = get_expenses(user_id, category_id, month, year, start_date, end_date)
     category_map: dict[str, dict] = {}
     daily_map: dict[str, float] = {}
 

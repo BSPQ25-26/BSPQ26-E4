@@ -35,6 +35,12 @@ vi.mock('recharts', async () => {
 
 vi.mock('../services/expenseService', () => ({
   getCategories: vi.fn().mockResolvedValue([]),
+  getHiddenCategories: vi.fn().mockResolvedValue([]),
+  createCategory: vi.fn(),
+  updateCategory: vi.fn(),
+  deleteCategory: vi.fn(),
+  hideCategory: vi.fn(),
+  unhideCategory: vi.fn(),
   getExpenses: vi.fn().mockResolvedValue([]),
   getDashboardAnalytics: vi.fn().mockResolvedValue({
     month_total: 0,
