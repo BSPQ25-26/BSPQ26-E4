@@ -20,6 +20,12 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   getCategories,
+  getHiddenCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  hideCategory,
+  unhideCategory,
   getExpenses,
   getDashboardAnalytics,
   getDashboardSummary,
@@ -53,6 +59,31 @@ const PAYMENT_METHODS = ["cash", "card", "transfer"];
  */
 const CHART_COLORS = [
   "#4F46E5", "#7C3AED", "#EC4899", "#F59E0B", "#10B981", "#3B82F6", "#6B7280"
+];
+
+/**
+ * Predefined icons available for categories so users do not need to
+ * type emojis manually from the keyboard.
+ *
+ * @type {{ value: string, label: string }[]}
+ */
+const CATEGORY_ICONS = [
+  { value: "🏷️", label: "Generic" },
+  { value: "🍔", label: "Food" },
+  { value: "🛒", label: "Groceries" },
+  { value: "🏠", label: "Home" },
+  { value: "🚗", label: "Transport" },
+  { value: "⛽", label: "Fuel" },
+  { value: "💡", label: "Bills" },
+  { value: "🎬", label: "Entertainment" },
+  { value: "🩺", label: "Health" },
+  { value: "✈️", label: "Travel" },
+  { value: "🎓", label: "Education" },
+  { value: "🐶", label: "Pets" },
+  { value: "🎁", label: "Gifts" },
+  { value: "👕", label: "Clothes" },
+  { value: "💼", label: "Work" },
+  { value: "💳", label: "Other" },
 ];
 
 /**
@@ -108,6 +139,7 @@ export default function DashboardPage() {
   const [year, setYear] = useState(now.getFullYear());
 
   const [categories, setCategories] = useState([]);
+  const [hiddenCategories, setHiddenCategories] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [analytics, setAnalytics] = useState(emptyAnalytics);
   const [summaryData, setSummaryData] = useState(null);
@@ -136,7 +168,36 @@ export default function DashboardPage() {
   const [editError, setEditError] = useState("");
   const [editSubmitting, setEditSubmitting] = useState(false);
 
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryDescription, setCategoryDescription] = useState("");
+  const [categoryColor, setCategoryColor] = useState("#4F46E5");
+  const [categoryIcon, setCategoryIcon] = useState("🏷️");
+  const [categoryFormError, setCategoryFormError] = useState("");
+  const [categorySubmitting, setCategorySubmitting] = useState(false);
+
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editCategoryName, setEditCategoryName] = useState("");
+  const [editCategoryDescription, setEditCategoryDescription] = useState("");
+  const [editCategoryColor, setEditCategoryColor] = useState("#4F46E5");
+  const [editCategoryIcon, setEditCategoryIcon] = useState("🏷️");
+  const [editCategoryError, setEditCategoryError] = useState("");
+  const [editCategorySubmitting, setEditCategorySubmitting] = useState(false);
+
   const [activeTab, setActiveTab] = useState("dashboard");
+
+  const loadCategories = useCallback(async () => {
+    const [visibleCategories, hiddenSharedCategories] = await Promise.all([
+      getCategories(token),
+      getHiddenCategories(token),
+    ]);
+    setCategories(visibleCategories);
+    setHiddenCategories(hiddenSharedCategories);
+
+    const ids = new Set(visibleCategories.map((category) => String(category.id)));
+    setSelectedCategory((prev) => (prev && !ids.has(String(prev)) ? "" : prev));
+    setCategoryId((prev) => (prev && !ids.has(String(prev)) ? "" : prev));
+    setEditCategoryId((prev) => (prev && !ids.has(String(prev)) ? "" : prev));
+  }, [token]);
 
   /**
    * Reload the expenses and the analytics payload using the current
@@ -202,8 +263,8 @@ export default function DashboardPage() {
   }, [token, month, year]);
 
   useEffect(() => {
-    getCategories(token).then(setCategories).catch(() => {});
-  }, [token]);
+    loadCategories().catch(() => {});
+  }, [loadCategories]);
 
   useEffect(() => {
     loadDashboardData();
@@ -336,15 +397,103 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleCategorySubmit(e) {
+    e.preventDefault();
+    setCategoryFormError("");
+    setCategorySubmitting(true);
+    try {
+      await createCategory(token, {
+        name: categoryName.trim(),
+        description: categoryDescription.trim() || null,
+        color: categoryColor || null,
+        icon: categoryIcon.trim() || null,
+      });
+      setCategoryName("");
+      setCategoryDescription("");
+      setCategoryColor("#4F46E5");
+      setCategoryIcon("🏷️");
+      await loadCategories();
+    } catch (err) {
+      setCategoryFormError(err.message);
+    } finally {
+      setCategorySubmitting(false);
+    }
+  }
+
+  function openCategoryEdit(category) {
+    setEditingCategory(category);
+    setEditCategoryName(category.name || "");
+    setEditCategoryDescription(category.description || "");
+    setEditCategoryColor(category.color || "#4F46E5");
+    setEditCategoryIcon(category.icon || "🏷️");
+    setEditCategoryError("");
+  }
+
+  function closeCategoryEdit() {
+    setEditingCategory(null);
+    setEditCategoryError("");
+  }
+
+  async function handleCategoryUpdate(e) {
+    e.preventDefault();
+    setEditCategoryError("");
+    setEditCategorySubmitting(true);
+    try {
+      await updateCategory(token, editingCategory.id, {
+        name: editCategoryName.trim(),
+        description: editCategoryDescription.trim() || null,
+        color: editCategoryColor || null,
+        icon: editCategoryIcon.trim() || null,
+      });
+      await loadCategories();
+      closeCategoryEdit();
+    } catch (err) {
+      setEditCategoryError(err.message);
+    } finally {
+      setEditCategorySubmitting(false);
+    }
+  }
+
+  async function handleCategoryDelete(id) {
+    setCategoryFormError("");
+    try {
+      await deleteCategory(token, id);
+      await loadCategories();
+    } catch (err) {
+      setCategoryFormError(err.message);
+    }
+  }
+
+  async function handleHideCategory(id) {
+    setCategoryFormError("");
+    try {
+      await hideCategory(token, id);
+      await loadCategories();
+    } catch (err) {
+      setCategoryFormError(err.message);
+    }
+  }
+
+  async function handleUnhideCategory(id) {
+    setCategoryFormError("");
+    try {
+      await unhideCategory(token, id);
+      await loadCategories();
+    } catch (err) {
+      setCategoryFormError(err.message);
+    }
+  }
+
   const categoryData = activeTab === "dashboard" ? analytics.category_breakdown : [];
   const dailyData = activeTab === "dashboard" ? analytics.daily_breakdown : [];
+  const myCategories = categories.filter((category) => category.user_id);
+  const sharedCategories = categories.filter((category) => !category.user_id);
 
   // Compute Quick Stats from local expenses array
   const monthTotal = analytics.month_total;
   const selectedRangeDays = startDate && endDate
     ? Math.max(1, Math.round((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1)
     : now.getDate();
-  const monthlyAverage = expenses.length ? monthTotal / expenses.length : 0;
   const dailyAverage = monthTotal / selectedRangeDays;
 
   const monthLabel = startDate && endDate ? `${startDate} to ${endDate}` :
@@ -390,6 +539,16 @@ export default function DashboardPage() {
             }`}
           >
             Add Expense
+          </button>
+          <button
+            onClick={() => setActiveTab("manage-categories")}
+            className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+              activeTab === "manage-categories"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Manage Categories
           </button>
         </nav>
       </div>
@@ -736,6 +895,257 @@ export default function DashboardPage() {
             </section>
           </div>
         )}
+
+        {activeTab === "manage-categories" && (
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)] gap-6">
+            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <h2 className="text-base font-semibold text-gray-900 mb-5">Create category</h2>
+
+              <form onSubmit={handleCategorySubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Name <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={categoryName}
+                    onChange={(e) => setCategoryName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Groceries"
+                  />
+                </div>
+
+                <div className="grid grid-cols-[140px_minmax(0,1fr)] gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Icon</label>
+                    <select
+                      value={categoryIcon}
+                      onChange={(e) => setCategoryIcon(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    >
+                      {CATEGORY_ICONS.map((iconOption) => (
+                        <option key={iconOption.value} value={iconOption.value}>
+                          {iconOption.value} {iconOption.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Color</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={categoryColor}
+                        onChange={(e) => setCategoryColor(e.target.value)}
+                        className="h-10 w-12 rounded border border-gray-300 bg-white"
+                      />
+                      <input
+                        type="text"
+                        value={categoryColor}
+                        onChange={(e) => setCategoryColor(e.target.value)}
+                        className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                  <textarea
+                    rows="4"
+                    value={categoryDescription}
+                    onChange={(e) => setCategoryDescription(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                    placeholder="Meals, groceries and supermarket purchases."
+                  />
+                </div>
+
+                {categoryFormError && (
+                  <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{categoryFormError}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={categorySubmitting}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
+                >
+                  {categorySubmitting ? "Saving…" : "Create category"}
+                </button>
+              </form>
+            </section>
+
+            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-semibold text-gray-900">Available categories</h2>
+                <span className="text-sm text-gray-500">{myCategories.length} mine · {sharedCategories.length} shared</span>
+              </div>
+
+              {categories.length === 0 && hiddenCategories.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-8">No categories available yet.</p>
+              ) : (
+                <div className="space-y-8">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-semibold text-gray-900">My Categories</h3>
+                      <span className="text-xs font-medium uppercase tracking-wide text-gray-400">{myCategories.length}</span>
+                    </div>
+
+                    {myCategories.length === 0 ? (
+                      <p className="text-sm text-gray-400">You have not created any personal categories yet.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {myCategories.map((category) => (
+                          <article
+                            key={category.id}
+                            className="rounded-2xl border border-gray-200 p-4 bg-gray-50 flex flex-col gap-4"
+                          >
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-3">
+                                <span
+                                  className="w-10 h-10 rounded-xl flex items-center justify-center text-lg border border-black/5"
+                                  style={{ backgroundColor: category.color || "#E5E7EB" }}
+                                >
+                                  {category.icon || "🏷️"}
+                                </span>
+                                <div className="min-w-0">
+                                  <h3 className="text-sm font-semibold text-gray-900 truncate">{category.name}</h3>
+                                  <p className="text-xs text-gray-500">{category.color || "No color"}</p>
+                                </div>
+                              </div>
+                              {category.description && (
+                                <p className="text-sm text-gray-600 mt-3">{category.description}</p>
+                              )}
+                            </div>
+
+                            <div className="flex gap-3 mt-auto">
+                              <button
+                                type="button"
+                                onClick={() => openCategoryEdit(category)}
+                                className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-2.5 rounded-lg hover:bg-white transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleCategoryDelete(category.id)}
+                                className="flex-1 bg-red-50 text-red-600 text-sm font-medium py-2.5 rounded-lg hover:bg-red-100 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-semibold text-gray-900">Shared Categories</h3>
+                      <span className="text-xs font-medium uppercase tracking-wide text-gray-400">{sharedCategories.length}</span>
+                    </div>
+
+                    {sharedCategories.length === 0 ? (
+                      <p className="text-sm text-gray-400">No shared categories are currently visible.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {sharedCategories.map((category) => (
+                          <article
+                            key={category.id}
+                            className="rounded-2xl border border-gray-200 p-4 bg-gray-50 flex flex-col gap-4"
+                          >
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-3">
+                                <span
+                                  className="w-10 h-10 rounded-xl flex items-center justify-center text-lg border border-black/5"
+                                  style={{ backgroundColor: category.color || "#E5E7EB" }}
+                                >
+                                  {category.icon || "🏷️"}
+                                </span>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="text-sm font-semibold text-gray-900 truncate">{category.name}</h3>
+                                    <span className="inline-flex items-center rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                                      Shared
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-500">{category.color || "No color"}</p>
+                                </div>
+                              </div>
+                              {category.description && (
+                                <p className="text-sm text-gray-600 mt-3">{category.description}</p>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleHideCategory(category.id)}
+                              className="mt-auto w-full border border-amber-300 bg-amber-50 text-amber-700 text-sm font-medium py-2.5 rounded-lg hover:bg-amber-100 transition-colors"
+                            >
+                              Hide from my categories
+                            </button>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-semibold text-gray-900">Hidden Shared Categories</h3>
+                      <span className="text-xs font-medium uppercase tracking-wide text-gray-400">{hiddenCategories.length}</span>
+                    </div>
+
+                    {hiddenCategories.length === 0 ? (
+                      <p className="text-sm text-gray-400">You have not hidden any shared categories.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {hiddenCategories.map((category) => (
+                          <article
+                            key={category.id}
+                            className="rounded-2xl border border-dashed border-gray-300 p-4 bg-white flex flex-col gap-4"
+                          >
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-3">
+                                <span
+                                  className="w-10 h-10 rounded-xl flex items-center justify-center text-lg border border-black/5 opacity-60"
+                                  style={{ backgroundColor: category.color || "#E5E7EB" }}
+                                >
+                                  {category.icon || "🏷️"}
+                                </span>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="text-sm font-semibold text-gray-900 truncate">{category.name}</h3>
+                                    <span className="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-700">
+                                      Hidden
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-500">{category.color || "No color"}</p>
+                                </div>
+                              </div>
+                              {category.description && (
+                                <p className="text-sm text-gray-600 mt-3">{category.description}</p>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleUnhideCategory(category.id)}
+                              className="mt-auto w-full border border-gray-300 text-gray-700 text-sm font-medium py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                              Restore to my categories
+                            </button>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </section>
+          </div>
+        )}
       </main>
 
       {editingExpense && (
@@ -841,6 +1251,103 @@ export default function DashboardPage() {
                   className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
                 >
                   {editSubmitting ? "Saving…" : "Save changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingCategory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-base font-semibold text-gray-900">Edit category</h2>
+              <button
+                onClick={closeCategoryEdit}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+                aria-label="Close category editor"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleCategoryUpdate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Name <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editCategoryName}
+                  onChange={(e) => setEditCategoryName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-[140px_minmax(0,1fr)] gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Icon</label>
+                  <select
+                    value={editCategoryIcon}
+                    onChange={(e) => setEditCategoryIcon(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  >
+                    {CATEGORY_ICONS.map((iconOption) => (
+                      <option key={iconOption.value} value={iconOption.value}>
+                        {iconOption.value} {iconOption.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Color</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={editCategoryColor}
+                      onChange={(e) => setEditCategoryColor(e.target.value)}
+                      className="h-10 w-12 rounded border border-gray-300 bg-white"
+                    />
+                    <input
+                      type="text"
+                      value={editCategoryColor}
+                      onChange={(e) => setEditCategoryColor(e.target.value)}
+                      className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                <textarea
+                  rows="4"
+                  value={editCategoryDescription}
+                  onChange={(e) => setEditCategoryDescription(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                />
+              </div>
+
+              {editCategoryError && (
+                <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{editCategoryError}</p>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={closeCategoryEdit}
+                  className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editCategorySubmitting}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
+                >
+                  {editCategorySubmitting ? "Saving…" : "Save category"}
                 </button>
               </div>
             </form>

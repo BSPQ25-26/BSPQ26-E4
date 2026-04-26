@@ -21,6 +21,8 @@ const API_BASE = "http://localhost:8080/api/v1";
  * @typedef {Object} Category
  * @property {number} id - Category primary key.
  * @property {string} name - Category display name.
+ * @property {string|null} [user_id] - Owning user UUID; `null` means shared.
+ * @property {string} [description] - Optional longer description.
  * @property {string} [color] - Optional hex/RGB colour used by the charts.
  * @property {string} [icon] - Optional emoji or icon identifier.
  */
@@ -87,8 +89,9 @@ function authHeaders(token) {
 }
 
 /**
- * Fetch every available expense category. Categories are reference
- * data shared across users, so no filter is applied.
+ * Fetch the categories currently visible to the user. This includes
+ * the user's own categories plus the shared categories they have not
+ * hidden.
  *
  * @param {string} token - Bearer token.
  * @returns {Promise<Category[]>}
@@ -101,6 +104,112 @@ export async function getCategories(token) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || "Failed to fetch categories");
   return data;
+}
+
+/**
+ * Fetch the shared categories hidden by the current user.
+ *
+ * @param {string} token - Bearer token.
+ * @returns {Promise<Category[]>}
+ */
+export async function getHiddenCategories(token) {
+  const res = await fetch(`${API_BASE}/categories/hidden`, {
+    headers: authHeaders(token),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to fetch hidden categories");
+  return data;
+}
+
+/**
+ * Create a category.
+ *
+ * @param {string} token - Bearer token.
+ * @param {Object} categoryData - Payload accepted by `POST /categories/`.
+ * @returns {Promise<Category>}
+ */
+export async function createCategory(token, categoryData) {
+  const res = await fetch(`${API_BASE}/categories/`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(categoryData),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to create category");
+  return data;
+}
+
+/**
+ * Update a category by id.
+ *
+ * @param {string} token - Bearer token.
+ * @param {number} id - Category primary key.
+ * @param {Object} categoryData - Partial category payload.
+ * @returns {Promise<Category>}
+ */
+export async function updateCategory(token, id, categoryData) {
+  const res = await fetch(`${API_BASE}/categories/${id}`, {
+    method: "PUT",
+    headers: authHeaders(token),
+    body: JSON.stringify(categoryData),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to update category");
+  return data;
+}
+
+/**
+ * Delete a category by id.
+ *
+ * @param {string} token - Bearer token.
+ * @param {number} id - Category primary key.
+ * @returns {Promise<void>}
+ */
+export async function deleteCategory(token, id) {
+  const res = await fetch(`${API_BASE}/categories/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+  if (!res.ok && res.status !== 204) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to delete category");
+  }
+}
+
+/**
+ * Hide a shared category for the current user.
+ *
+ * @param {string} token - Bearer token.
+ * @param {number} id - Category primary key.
+ * @returns {Promise<void>}
+ */
+export async function hideCategory(token, id) {
+  const res = await fetch(`${API_BASE}/categories/${id}/hide`, {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+  if (!res.ok && res.status !== 204) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to hide category");
+  }
+}
+
+/**
+ * Restore a previously hidden shared category for the current user.
+ *
+ * @param {string} token - Bearer token.
+ * @param {number} id - Category primary key.
+ * @returns {Promise<void>}
+ */
+export async function unhideCategory(token, id) {
+  const res = await fetch(`${API_BASE}/categories/${id}/hide`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+  if (!res.ok && res.status !== 204) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to restore category");
+  }
 }
 
 /**
@@ -136,13 +245,19 @@ export async function getExpenses(token, { month, year, category_id, start_date,
  * @param {Object} [filters] - Optional filtering options.
  * @param {number} [filters.month] - Month filter (1..12); used together with `year`.
  * @param {number} [filters.year] - Year filter; used together with `month`.
+ * @param {number|string} [filters.category_id] - Category filter.
+ * @param {string} [filters.start_date] - ISO start date (inclusive).
+ * @param {string} [filters.end_date] - ISO end date (inclusive).
  * @returns {Promise<ExpenseAnalytics>}
  * @throws {Error} If the backend errors out.
  */
-export async function getDashboardAnalytics(token, { month, year } = {}) {
+export async function getDashboardAnalytics(token, { month, year, category_id, start_date, end_date } = {}) {
   const params = new URLSearchParams();
   if (month) params.set("month", month);
   if (year) params.set("year", year);
+  if (category_id) params.set("category_id", category_id);
+  if (start_date) params.set("start_date", start_date);
+  if (end_date) params.set("end_date", end_date);
   const res = await fetch(`${API_BASE}/expenses/analytics?${params}`, {
     headers: authHeaders(token),
   });

@@ -9,6 +9,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   getCategories,
+  getHiddenCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  hideCategory,
+  unhideCategory,
   getExpenses,
   getDashboardAnalytics,
   createExpense,
@@ -60,6 +66,73 @@ describe('expenseService', () => {
     })
   })
 
+  describe('getHiddenCategories()', () => {
+    it('returns the parsed list of hidden shared categories', async () => {
+      const categories = [{ id: 4, name: 'Travel', icon: '✈️' }]
+      fetch.mockResolvedValueOnce(fakeResponse({ body: categories }))
+
+      const result = await getHiddenCategories('tok')
+
+      expect(result).toEqual(categories)
+      const [url, init] = fetch.mock.calls[0]
+      expect(url).toMatch(/\/categories\/hidden$/)
+      expect(init.headers.Authorization).toBe('Bearer tok')
+    })
+  })
+
+  describe('category CRUD helpers', () => {
+    it('POSTs a new category and returns it', async () => {
+      const inserted = { id: 10, name: 'Pets', icon: '🐶' }
+      fetch.mockResolvedValueOnce(fakeResponse({ body: inserted }))
+
+      const result = await createCategory('tok', { name: 'Pets', icon: '🐶' })
+
+      expect(result).toEqual(inserted)
+      const [url, init] = fetch.mock.calls[0]
+      expect(url).toMatch(/\/categories\/$/)
+      expect(init.method).toBe('POST')
+    })
+
+    it('PUTs category changes', async () => {
+      const updated = { id: 1, name: 'Food & Drinks' }
+      fetch.mockResolvedValueOnce(fakeResponse({ body: updated }))
+
+      const result = await updateCategory('tok', 1, { name: 'Food & Drinks' })
+
+      expect(result).toEqual(updated)
+      const [url, init] = fetch.mock.calls[0]
+      expect(url).toMatch(/\/categories\/1$/)
+      expect(init.method).toBe('PUT')
+    })
+
+    it('DELETEs a category', async () => {
+      fetch.mockResolvedValueOnce(fakeResponse({ ok: true, status: 204 }))
+
+      await expect(deleteCategory('tok', 1)).resolves.toBeUndefined()
+      const [url, init] = fetch.mock.calls[0]
+      expect(url).toMatch(/\/categories\/1$/)
+      expect(init.method).toBe('DELETE')
+    })
+
+    it('POSTs hide for a shared category', async () => {
+      fetch.mockResolvedValueOnce(fakeResponse({ ok: true, status: 204 }))
+
+      await expect(hideCategory('tok', 8)).resolves.toBeUndefined()
+      const [url, init] = fetch.mock.calls[0]
+      expect(url).toMatch(/\/categories\/8\/hide$/)
+      expect(init.method).toBe('POST')
+    })
+
+    it('DELETEs hide to restore a shared category', async () => {
+      fetch.mockResolvedValueOnce(fakeResponse({ ok: true, status: 204 }))
+
+      await expect(unhideCategory('tok', 8)).resolves.toBeUndefined()
+      const [url, init] = fetch.mock.calls[0]
+      expect(url).toMatch(/\/categories\/8\/hide$/)
+      expect(init.method).toBe('DELETE')
+    })
+  })
+
   describe('getExpenses()', () => {
     it('appends every provided filter as a query-string param', async () => {
       fetch.mockResolvedValueOnce(fakeResponse({ body: [] }))
@@ -101,13 +174,22 @@ describe('expenseService', () => {
       }
       fetch.mockResolvedValueOnce(fakeResponse({ body: analytics }))
 
-      const result = await getDashboardAnalytics('tok', { month: 4, year: 2026 })
+      const result = await getDashboardAnalytics('tok', {
+        month: 4,
+        year: 2026,
+        category_id: 7,
+        start_date: '2026-04-01',
+        end_date: '2026-04-30',
+      })
 
       expect(result).toEqual(analytics)
       const [url] = fetch.mock.calls[0]
       expect(url).toContain('/expenses/analytics?')
       expect(url).toContain('month=4')
       expect(url).toContain('year=2026')
+      expect(url).toContain('category_id=7')
+      expect(url).toContain('start_date=2026-04-01')
+      expect(url).toContain('end_date=2026-04-30')
     })
   })
 
