@@ -11,7 +11,7 @@
  */
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { getMe, logout as apiLogout } from "../services/authService";
+import { getMe, updateMe, logout as apiLogout } from "../services/authService";
 
 /**
  * @typedef {Object} AuthUser
@@ -45,6 +45,7 @@ import { getMe, logout as apiLogout } from "../services/authService";
  * @property {boolean} loading - `true` while the session is being restored on mount.
  * @property {LoginHandler} login - Persist a new session and update the context.
  * @property {LogoutHandler} logout - Clear the session both server-side and locally.
+ * @property {function(Object): Promise<void>} updateUser - Patch the user profile and refresh the context.
  */
 
 /**
@@ -113,6 +114,18 @@ export function AuthProvider({ children }) {
    *
    * @returns {Promise<void>}
    */
+  /**
+   * Patch the authenticated user's profile and merge the result into the
+   * context so every consumer sees the update immediately.
+   *
+   * @param {Object} profileData - Partial profile payload (see {@link updateMe}).
+   * @returns {Promise<void>}
+   */
+  async function handleUpdateUser(profileData) {
+    const updated = await updateMe(token, profileData);
+    setUser((prev) => ({ ...prev, ...updated }));
+  }
+
   async function handleLogout() {
     if (token) {
       await apiLogout(token).catch(() => {});
@@ -123,7 +136,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login: handleLogin, logout: handleLogout }}>
+    <AuthContext.Provider value={{ user, token, loading, login: handleLogin, logout: handleLogout, updateUser: handleUpdateUser }}>
       {children}
     </AuthContext.Provider>
   );

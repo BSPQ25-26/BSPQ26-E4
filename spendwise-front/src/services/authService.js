@@ -92,6 +92,28 @@ export async function getMe(token) {
 }
 
 /**
+ * Update the profile of the currently authenticated user.
+ *
+ * @param {string} token - Bearer token obtained from {@link login}.
+ * @param {Object} profileData - Partial profile payload.
+ * @param {string} [profileData.full_name] - Display name.
+ * @param {string} [profileData.currency] - Preferred currency code (e.g. `"EUR"`).
+ * @param {number} [profileData.monthly_income] - Self-reported monthly income.
+ * @returns {Promise<Object>} Resolves with the updated profile row.
+ * @throws {Error} If the backend rejects the payload.
+ */
+export async function updateMe(token, profileData) {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(profileData),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to update profile");
+  return data;
+}
+
+/**
  * Invalidate the current Supabase session server-side. Failures are
  * swallowed by callers (see `AuthProvider`) so the UI can still tear
  * down the local session even when the network call fails.
