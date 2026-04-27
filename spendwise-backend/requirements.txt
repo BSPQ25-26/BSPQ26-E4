@@ -18,3 +18,6 @@ locust>=2.15.0
 # Documentation Dependencies (Sphinx)
 sphinx>=7.3
 sphinx-rtd-theme>=2.0
+
+# Profiling Dependencies
+pyinstrument==0.0.7
