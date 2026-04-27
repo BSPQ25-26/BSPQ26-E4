@@ -12,7 +12,8 @@
     "docs:clean": "rimraf docs/_build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.js"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",

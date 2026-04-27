@@ -57,3 +57,6 @@ spendwise-front/coverage/
 # Claude Code
 .claude/
 spendwise-front/package-lock.json
+
+# Other files
+*.pdf

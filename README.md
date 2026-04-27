@@ -35,3 +35,22 @@ SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_KEY=your_service_key
 ```
+
+## Testing
+
+### Backend Tests
+```bash
+cd spendwise-backend
+pytest tests/ -v
+```
+
+### Frontend Tests
+```bash
+cd spendwise-front
+npm test
+```
+# Test cases from the client side that calls the server
+```bash
+cd spendwise-front
+npm run test:integration
+```

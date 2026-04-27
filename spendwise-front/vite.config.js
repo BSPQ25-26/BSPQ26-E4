@@ -24,7 +24,10 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.js'],
     // Don't try to scan the documentation build output or
     // node_modules for test files.
-    exclude: ['node_modules', 'dist', 'docs'],
+    // Exclude integration tests from the normal run — they need the
+    // backend server to be running and must be triggered explicitly via
+    // `npm run test:integration`.
+    exclude: ['node_modules', 'dist', 'docs', 'src/**/*.integration.test.*'],
     coverage: {
       // V8 is faster than istanbul and ships with Node, so it's the
       // default we standardise on.
@@ -38,6 +41,7 @@ export default defineConfig({
         'src/main.jsx',
         'src/test/**',
         'src/**/*.test.{js,jsx}',
+        'src/**/*.integration.test.{js,jsx}',
       ],
     },
   },
