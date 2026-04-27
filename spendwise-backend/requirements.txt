@@ -21,4 +21,4 @@ sphinx>=7.3
 sphinx-rtd-theme>=2.0
 
 # Profiling Dependencies
-pyinstrument==0.0.7
+pyinstrument>=4.0.0
