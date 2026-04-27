@@ -32,6 +32,8 @@ import {
   createExpense,
   updateExpense,
   deleteExpense,
+  getAlerts,
+  dismissAlert,
 } from "../services/expenseService";
 import {
   PieChart, Pie, Cell,
@@ -183,6 +185,17 @@ export default function DashboardPage() {
   const [editCategoryError, setEditCategoryError] = useState("");
   const [editCategorySubmitting, setEditCategorySubmitting] = useState(false);
 
+  const [alerts, setAlerts] = useState([]);
+
+  const loadAlerts = useCallback(async () => {
+    try {
+      const data = await getAlerts(token);
+      setAlerts(data);
+    } catch {
+      setAlerts([]);
+    }
+  }, [token]);
+
   const [settingsFullName, setSettingsFullName] = useState("");
   const [settingsCurrency, setSettingsCurrency] = useState("");
   const [settingsIncome, setSettingsIncome] = useState("");
@@ -282,6 +295,10 @@ export default function DashboardPage() {
   }, [loadCategories]);
 
   useEffect(() => {
+    loadAlerts();
+  }, [loadAlerts]);
+
+  useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData]);
 
@@ -295,6 +312,15 @@ export default function DashboardPage() {
    *
    * @returns {Promise<void>}
    */
+  async function handleDismissAlert(id) {
+    try {
+      await dismissAlert(token, id);
+      setAlerts((prev) => prev.filter((a) => a.id !== id));
+    } catch {
+      // Best-effort: swallow so a transient error doesn't block the UI.
+    }
+  }
+
   async function handleSettingsSubmit(e) {
     e.preventDefault();
     setSettingsError("");
@@ -544,6 +570,20 @@ export default function DashboardPage() {
             {user?.email}
           </span>
           <button
+            onClick={() => setActiveTab("alerts")}
+            className="relative text-gray-400 hover:text-indigo-600 transition-colors"
+            aria-label="Alerts"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 2a6 6 0 00-6 6v2.586l-.707.707A1 1 0 004 13h12a1 1 0 00.707-1.707L16 10.586V8a6 6 0 00-6-6zm0 16a2 2 0 01-2-2h4a2 2 0 01-2 2z" />
+            </svg>
+            {alerts.length > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                {alerts.length > 9 ? "9+" : alerts.length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={handleLogout}
             className="text-sm text-gray-400 hover:text-red-500 transition-colors"
           >
@@ -583,6 +623,21 @@ export default function DashboardPage() {
             }`}
           >
             Manage Categories
+          </button>
+          <button
+            onClick={() => setActiveTab("alerts")}
+            className={`relative py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+              activeTab === "alerts"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Alerts
+            {alerts.length > 0 && (
+              <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                {alerts.length > 9 ? "9+" : alerts.length}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab("settings")}
@@ -899,7 +954,7 @@ export default function DashboardPage() {
                   {expenses.map((expense) => (
                     <li key={expense.id} className="flex items-center justify-between py-3 gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-xl leading-none flex-shrink-0">
+                        <span className="text-xl leading-none shrink-0">
                           {expense.categories?.icon || "💳"}
                         </span>
                         <div className="min-w-0">
@@ -911,7 +966,7 @@ export default function DashboardPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="flex items-center gap-3 shrink-0">
                         <span className="text-sm font-semibold text-gray-900">
                           {parseFloat(expense.amount).toFixed(2)}
                         </span>
@@ -932,6 +987,62 @@ export default function DashboardPage() {
                           ×
                         </button>
                       </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+        )}
+
+        {activeTab === "alerts" && (
+          <div className="max-w-2xl mx-auto">
+            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-semibold text-gray-900">Alerts</h2>
+                <span className="text-sm text-gray-500">{alerts.length} pending</span>
+              </div>
+
+              {alerts.length === 0 ? (
+                <div className="py-12 text-center">
+                  <p className="text-2xl mb-2">✅</p>
+                  <p className="text-sm text-gray-400">No pending alerts. You are within all your budgets.</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {alerts.map((alert) => (
+                    <li key={alert.id} className="flex items-start justify-between gap-4 py-4">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-500">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-800">
+                            Budget exceeded
+                            {alert.budgets && (
+                              <span className="font-normal text-gray-500">
+                                {" "}— limit {parseFloat(alert.budgets.amount).toFixed(2)} {user?.currency || "EUR"} ({alert.budgets.month}/{alert.budgets.year})
+                              </span>
+                            )}
+                          </p>
+                          {alert.expenses && (
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              Triggered by: {alert.expenses.description || "expense"} · {parseFloat(alert.expenses.amount).toFixed(2)} {user?.currency || "EUR"}
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {new Date(alert.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDismissAlert(alert.id)}
+                        className="shrink-0 text-xs text-gray-400 hover:text-red-500 border border-gray-200 hover:border-red-200 rounded-lg px-3 py-1.5 transition-colors"
+                      >
+                        Dismiss
+                      </button>
                     </li>
                   ))}
                 </ul>
