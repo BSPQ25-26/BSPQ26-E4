@@ -131,7 +131,7 @@ const emptyAnalytics = {
  * @returns {JSX.Element}
  */
 export default function DashboardPage() {
-  const { user, token, logout } = useAuth();
+  const { user, token, logout, updateUser } = useAuth();
   const navigate = useNavigate();
 
   const now = new Date();
@@ -182,6 +182,13 @@ export default function DashboardPage() {
   const [editCategoryIcon, setEditCategoryIcon] = useState("🏷️");
   const [editCategoryError, setEditCategoryError] = useState("");
   const [editCategorySubmitting, setEditCategorySubmitting] = useState(false);
+
+  const [settingsFullName, setSettingsFullName] = useState("");
+  const [settingsCurrency, setSettingsCurrency] = useState("");
+  const [settingsIncome, setSettingsIncome] = useState("");
+  const [settingsError, setSettingsError] = useState("");
+  const [settingsSuccess, setSettingsSuccess] = useState(false);
+  const [settingsSubmitting, setSettingsSubmitting] = useState(false);
 
   const [activeTab, setActiveTab] = useState("dashboard");
 
@@ -263,6 +270,14 @@ export default function DashboardPage() {
   }, [token, month, year]);
 
   useEffect(() => {
+    if (user) {
+      setSettingsFullName(user.full_name || "");
+      setSettingsCurrency(user.currency || "EUR");
+      setSettingsIncome(user.monthly_income != null ? String(user.monthly_income) : "");
+    }
+  }, [user]);
+
+  useEffect(() => {
     loadCategories().catch(() => {});
   }, [loadCategories]);
 
@@ -280,6 +295,25 @@ export default function DashboardPage() {
    *
    * @returns {Promise<void>}
    */
+  async function handleSettingsSubmit(e) {
+    e.preventDefault();
+    setSettingsError("");
+    setSettingsSuccess(false);
+    setSettingsSubmitting(true);
+    try {
+      const payload = {};
+      if (settingsFullName.trim()) payload.full_name = settingsFullName.trim();
+      if (settingsCurrency) payload.currency = settingsCurrency;
+      if (settingsIncome !== "") payload.monthly_income = parseFloat(settingsIncome);
+      await updateUser(payload);
+      setSettingsSuccess(true);
+    } catch (err) {
+      setSettingsError(err.message);
+    } finally {
+      setSettingsSubmitting(false);
+    }
+  }
+
   async function handleLogout() {
     await logout();
     navigate("/login");
@@ -549,6 +583,16 @@ export default function DashboardPage() {
             }`}
           >
             Manage Categories
+          </button>
+          <button
+            onClick={() => setActiveTab("settings")}
+            className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+              activeTab === "settings"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Settings
           </button>
         </nav>
       </div>
@@ -892,6 +936,79 @@ export default function DashboardPage() {
                   ))}
                 </ul>
               )}
+            </section>
+          </div>
+        )}
+
+        {activeTab === "settings" && (
+          <div className="max-w-lg mx-auto">
+            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <h2 className="text-base font-semibold text-gray-900 mb-1">Profile & Preferences</h2>
+              <p className="text-sm text-gray-500 mb-6">Changes are saved immediately to your account.</p>
+
+              <form onSubmit={handleSettingsSubmit} className="space-y-5">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+                  <input
+                    type="text"
+                    disabled
+                    value={user?.email || ""}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Display Name</label>
+                  <input
+                    type="text"
+                    placeholder="Your name"
+                    value={settingsFullName}
+                    onChange={(e) => { setSettingsFullName(e.target.value); setSettingsSuccess(false); }}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Currency</label>
+                  <select
+                    value={settingsCurrency}
+                    onChange={(e) => { setSettingsCurrency(e.target.value); setSettingsSuccess(false); }}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  >
+                    {["EUR", "USD", "GBP", "JPY", "CHF", "CAD", "AUD", "MXN", "BRL"].map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Monthly Income (optional)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={settingsIncome}
+                    onChange={(e) => { setSettingsIncome(e.target.value); setSettingsSuccess(false); }}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                {settingsError && (
+                  <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{settingsError}</p>
+                )}
+                {settingsSuccess && (
+                  <p className="text-sm text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg">Profile updated successfully.</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={settingsSubmitting}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
+                >
+                  {settingsSubmitting ? "Saving…" : "Save changes"}
+                </button>
+              </form>
             </section>
           </div>
         )}
