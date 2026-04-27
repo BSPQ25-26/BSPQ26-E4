@@ -353,3 +353,46 @@ export async function getDashboardSummary(token, { month, year } = {}) {
   if (!res.ok) throw new Error(data.detail || "Failed to fetch dashboard summary");
   return data;
 }
+
+/**
+ * @typedef {Object} Alert
+ * @property {number} id - Alert primary key.
+ * @property {string} created_at - ISO timestamp of when the alert was generated.
+ * @property {Object|null} budgets - Joined budget row: `{ amount, year, month }`.
+ * @property {Object|null} expenses - Joined expense row: `{ amount, description }`.
+ */
+
+/**
+ * Fetch all pending alerts for the authenticated user, newest first.
+ *
+ * @param {string} token - Bearer token.
+ * @returns {Promise<Alert[]>}
+ * @throws {Error} If the backend errors out.
+ */
+export async function getAlerts(token) {
+  const res = await fetch(`${API_BASE}/alerts/`, {
+    headers: authHeaders(token),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to fetch alerts");
+  return data;
+}
+
+/**
+ * Dismiss a single alert owned by the authenticated user.
+ *
+ * @param {string} token - Bearer token.
+ * @param {number} alertId - Primary key of the alert to dismiss.
+ * @returns {Promise<void>}
+ * @throws {Error} On non-204 responses.
+ */
+export async function dismissAlert(token, alertId) {
+  const res = await fetch(`${API_BASE}/alerts/${alertId}`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+  if (!res.ok && res.status !== 204) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to dismiss alert");
+  }
+}
