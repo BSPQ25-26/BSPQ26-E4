@@ -62,6 +62,10 @@ The project uses **pytest** and **locust** (for load tests):
    pytest                          # unit and integration tests
    locust -f tests/locustfile.py   # performance tests (UI on :8089)
 
+See the :doc:`testing` page for a full inventory of every test in the
+suite, the mocking strategy used, and how to reproduce the performance
+runs.
+
 Building this documentation
 ---------------------------
 

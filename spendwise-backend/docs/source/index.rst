@@ -13,6 +13,7 @@ data structures used across the codebase.
 
    installation
    architecture
+   testing
 
 .. toctree::
    :maxdepth: 2
