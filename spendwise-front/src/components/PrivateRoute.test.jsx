@@ -23,7 +23,7 @@ import { useAuth } from '../context/AuthContext'
  * Render the guard at `/secret` together with a stub login screen, so
  * tests can detect a redirect by looking for the login marker.
  *
- * @param {() => JSX.Element} secretContent - What `PrivateRoute` should render when the user is authenticated.
+ * @param {React.ReactNode} secretContent - What `PrivateRoute` should render when the user is authenticated.
  */
 function renderWithRouter(secretContent) {
   return render(

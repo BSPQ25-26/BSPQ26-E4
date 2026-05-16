@@ -67,7 +67,7 @@ const CHART_COLORS = [
  * Predefined icons available for categories so users do not need to
  * type emojis manually from the keyboard.
  *
- * @type {{ value: string, label: string }[]}
+ * @type {Array<{value: string, label: string}>}
  */
 const CATEGORY_ICONS = [
   { value: "🏷️", label: "Generic" },
