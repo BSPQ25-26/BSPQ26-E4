@@ -21,4 +21,7 @@ sphinx>=7.3
 sphinx-rtd-theme>=2.0
 
 # Profiling Dependencies
-pyinstrument>=4.0.0
+# Pinned to an exact version: a loose >=4.0.0 caused pip's resolver to
+# backtrack into yanked releases on Python 3.11, producing a misleading
+# "pyinstrument==0.0.7 not found" error during CI installs.
+pyinstrument==5.1.2

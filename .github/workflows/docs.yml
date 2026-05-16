@@ -45,19 +45,22 @@ jobs:
           cache-dependency-path: spendwise-front/package-lock.json
 
       # latexmk + the recommended/extra TeX Live bundles are what Sphinx
-      # needs to produce the PDF manual. fonts-recommended pulls the Latin
-      # Modern fonts the default Sphinx LaTeX layout uses.
+      # needs to produce the PDF manual. tex-gyre ships tgtermes.sty,
+      # which the default Sphinx LaTeX layout requires.
       - name: Install LaTeX
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             latexmk \
+            tex-gyre \
             texlive-latex-base \
             texlive-latex-recommended \
             texlive-latex-extra \
             texlive-fonts-recommended \
+            texlive-fonts-extra \
             texlive-pictures \
-            texlive-plain-generic
+            texlive-plain-generic \
+            texlive-xetex
 
       - name: Install backend dependencies
         working-directory: spendwise-backend
