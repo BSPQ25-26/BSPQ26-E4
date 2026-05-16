@@ -1,8 +1,34 @@
 services:
-  api:
-    build: .
+
+  backend:
+    build:
+      context: ./spendwise-backend
+      dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8080:8080"
     environment:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./spendwise-front
+      dockerfile: Dockerfile
+      args:
+        # /api/v1 is a relative path — nginx proxies it to the backend
+        # container, so the browser never needs to know the backend port.
+        VITE_API_BASE: /api/v1
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped

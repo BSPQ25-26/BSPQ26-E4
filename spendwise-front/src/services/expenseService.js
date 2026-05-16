@@ -10,12 +10,13 @@
  */
 
 /**
- * Base URL of the backend API. Hard-coded for local development; see
- * the analogous note in `authService.js`.
+ * Base URL of the backend API. Reads from the `VITE_API_BASE` build-time
+ * env var (set to `/api/v1` in Docker so nginx proxies to the backend),
+ * falling back to localhost for local development.
  *
  * @type {string}
  */
-const API_BASE = "http://localhost:8080/api/v1";
+const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8080/api/v1";
 
 /**
  * @typedef {Object} Category
