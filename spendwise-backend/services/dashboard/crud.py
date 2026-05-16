@@ -9,37 +9,27 @@ import calendar
 from datetime import date
 
 from core.database import supabase_admin as supabase
+from app.utils.currency import convert_currency
 
 
 def get_monthly_summary(user_id: str, month: int, year: int) -> dict:
-    """Compute the monthly spending summary for a user.
+    """Compute the monthly spending summary for a user."""
+    
+    # 1. Obtenemos la moneda preferida del usuario
+    try:
+        user_profile = supabase.table("user_profiles").select("currency").eq("id", user_id).single().execute()
+        base_currency = user_profile.data.get("currency", "EUR") if user_profile.data else "EUR"
+    except Exception:
+        base_currency = "EUR"
 
-    The function fetches every expense in the requested month and
-    aggregates two figures: the total spent and the average daily cost.
-    The denominator used for the average depends on whether the month
-    is in the past, the current month, or in the future:
-
-    * Current month: divide by the day of the month elapsed so far.
-    * Past month: divide by the total number of days in that month.
-    * Future month: division is skipped (the average becomes 0.0).
-
-    Args:
-        user_id: Supabase user UUID, serialised as string.
-        month: Target month (1-12).
-        year: Target year.
-
-    Returns:
-        dict: Payload matching :class:`schemas.DashboardSummaryResponse`.
-    """
-    # Compute the boundaries of the requested month so we can issue a
-    # range query against ``expense_date``.
     last_day = calendar.monthrange(year, month)[1]
     start_date = f"{year}-{month:02d}-01"
     end_date = f"{year}-{month:02d}-{last_day}"
 
+    # 2. Nos aseguramos de traernos también el campo "currency"
     query = (
         supabase.table("expenses")
-        .select("amount")
+        .select("amount, currency")
         .eq("user_id", user_id)
         .gte("expense_date", start_date)
         .lte("expense_date", end_date)
@@ -48,20 +38,19 @@ def get_monthly_summary(user_id: str, month: int, year: int) -> dict:
     res = query.execute()
     expenses = res.data if res.data else []
 
-    total_spending = sum(float(exp["amount"]) for exp in expenses)
+    # 3. Sumamos convirtiendo cada gasto al vuelo
+    total_spending = 0.0
+    for exp in expenses:
+        raw_amount = float(exp["amount"])
+        exp_currency = exp.get("currency", "EUR")
+        total_spending += convert_currency(raw_amount, exp_currency, base_currency)
 
-    # Choose the divisor used for the daily average based on whether
-    # the requested month is the current one, in the past, or in the
-    # future.
     today = date.today()
     if today.year == year and today.month == month:
         days_to_divide = today.day
     elif today.year > year or (today.year == year and today.month > month):
         days_to_divide = last_day
     else:
-        # Future month: nothing has been spent yet, so the average
-        # makes no sense. Falling back to 0.0 keeps the response shape
-        # stable for the frontend.
         days_to_divide = 0
 
     average_daily_costs = (
@@ -73,4 +62,4 @@ def get_monthly_summary(user_id: str, month: int, year: int) -> dict:
         "average_daily_costs": round(average_daily_costs, 2),
         "month": month,
         "year": year,
-    }
+    }   
