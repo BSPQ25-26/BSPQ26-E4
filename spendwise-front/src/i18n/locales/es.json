@@ -162,6 +162,27 @@
     "expenseFallback": "gasto",
     "dismiss": "Descartar"
   },
+  "errors": {
+    "registrationFailed": "No se pudo completar el registro",
+    "loginFailed": "No se pudo iniciar sesión",
+    "fetchProfileFailed": "No se pudo cargar el perfil",
+    "updateProfileFailed": "No se pudo actualizar el perfil",
+    "fetchCategoriesFailed": "No se pudieron cargar las categorías",
+    "fetchHiddenCategoriesFailed": "No se pudieron cargar las categorías ocultas",
+    "createCategoryFailed": "No se pudo crear la categoría",
+    "updateCategoryFailed": "No se pudo actualizar la categoría",
+    "deleteCategoryFailed": "No se pudo eliminar la categoría",
+    "hideCategoryFailed": "No se pudo ocultar la categoría",
+    "restoreCategoryFailed": "No se pudo restaurar la categoría",
+    "fetchExpensesFailed": "No se pudieron cargar los gastos",
+    "fetchAnalyticsFailed": "No se pudieron cargar las analíticas",
+    "createExpenseFailed": "No se pudo crear el gasto",
+    "updateExpenseFailed": "No se pudo actualizar el gasto",
+    "deleteExpenseFailed": "No se pudo eliminar el gasto",
+    "fetchSummaryFailed": "No se pudo cargar el resumen",
+    "fetchAlertsFailed": "No se pudieron cargar las alertas",
+    "dismissAlertFailed": "No se pudo descartar la alerta"
+  },
   "settings": {
     "title": "Perfil y preferencias",
     "subtitle": "Los cambios se guardan inmediatamente en tu cuenta.",

@@ -162,6 +162,27 @@
     "expenseFallback": "expense",
     "dismiss": "Dismiss"
   },
+  "errors": {
+    "registrationFailed": "Registration failed",
+    "loginFailed": "Login failed",
+    "fetchProfileFailed": "Failed to fetch profile",
+    "updateProfileFailed": "Failed to update profile",
+    "fetchCategoriesFailed": "Failed to fetch categories",
+    "fetchHiddenCategoriesFailed": "Failed to fetch hidden categories",
+    "createCategoryFailed": "Failed to create category",
+    "updateCategoryFailed": "Failed to update category",
+    "deleteCategoryFailed": "Failed to delete category",
+    "hideCategoryFailed": "Failed to hide category",
+    "restoreCategoryFailed": "Failed to restore category",
+    "fetchExpensesFailed": "Failed to fetch expenses",
+    "fetchAnalyticsFailed": "Failed to fetch dashboard analytics",
+    "createExpenseFailed": "Failed to create expense",
+    "updateExpenseFailed": "Failed to update expense",
+    "deleteExpenseFailed": "Failed to delete expense",
+    "fetchSummaryFailed": "Failed to fetch dashboard summary",
+    "fetchAlertsFailed": "Failed to fetch alerts",
+    "dismissAlertFailed": "Failed to dismiss alert"
+  },
   "settings": {
     "title": "Profile & Preferences",
     "subtitle": "Changes are saved immediately to your account.",

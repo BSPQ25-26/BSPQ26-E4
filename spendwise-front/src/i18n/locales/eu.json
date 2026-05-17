@@ -162,6 +162,27 @@
     "expenseFallback": "gastua",
     "dismiss": "Baztertu"
   },
+  "errors": {
+    "registrationFailed": "Ezin izan da erregistroa burutu",
+    "loginFailed": "Ezin izan da saioa hasi",
+    "fetchProfileFailed": "Ezin izan da profila kargatu",
+    "updateProfileFailed": "Ezin izan da profila eguneratu",
+    "fetchCategoriesFailed": "Ezin izan dira kategoriak kargatu",
+    "fetchHiddenCategoriesFailed": "Ezin izan dira ezkutuko kategoriak kargatu",
+    "createCategoryFailed": "Ezin izan da kategoria sortu",
+    "updateCategoryFailed": "Ezin izan da kategoria eguneratu",
+    "deleteCategoryFailed": "Ezin izan da kategoria ezabatu",
+    "hideCategoryFailed": "Ezin izan da kategoria ezkutatu",
+    "restoreCategoryFailed": "Ezin izan da kategoria berreskuratu",
+    "fetchExpensesFailed": "Ezin izan dira gastuak kargatu",
+    "fetchAnalyticsFailed": "Ezin izan dira analitikak kargatu",
+    "createExpenseFailed": "Ezin izan da gastua sortu",
+    "updateExpenseFailed": "Ezin izan da gastua eguneratu",
+    "deleteExpenseFailed": "Ezin izan da gastua ezabatu",
+    "fetchSummaryFailed": "Ezin izan da laburpena kargatu",
+    "fetchAlertsFailed": "Ezin izan dira alertak kargatu",
+    "dismissAlertFailed": "Ezin izan da alerta baztertu"
+  },
   "settings": {
     "title": "Profila eta hobespenak",
     "subtitle": "Aldaketak berehala gordetzen dira zure kontuan.",
