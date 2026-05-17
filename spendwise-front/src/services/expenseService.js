@@ -380,6 +380,62 @@ export async function getAlerts(token) {
 }
 
 /**
+ * Convert an array of {@link Expense} objects into a real Excel workbook
+ * (`.xlsx`) and trigger a browser file-download.
+ *
+ * The function is **purely client-side** and uses the SheetJS (`xlsx`)
+ * library to build a proper binary Excel file. Because the output is a
+ * native `.xlsx`, Excel opens it with each field already in its own cell
+ * regardless of the user's regional locale setting — no CSV delimiter
+ * ambiguity, no import wizard, no concatenated values.
+ *
+ * The `amount` column is stored as a **number** so Excel can perform
+ * arithmetic (SUM, AVERAGE, etc.) on it directly.
+ *
+ * @param {Expense[]} expenses - The array of expenses to serialise.
+ * @param {string} [filename] - Suggested file name for the download.
+ *   Defaults to `"spendwise-expenses.xlsx"`.
+ * @returns {void}
+ */
+export function exportExpensesToCSV(expenses, filename = "spendwise-expenses.xlsx") {
+  // Lazy-import so the xlsx bundle is only evaluated when the user clicks
+  // "Download". The dynamic import is synchronous in Vite's bundler because
+  // SheetJS is a CommonJS module included in the vendor chunk.
+  import("xlsx").then(({ utils, write }) => {
+    /** Rows as plain JS arrays — SheetJS infers the cell type automatically. */
+    const data = [
+      ["ID", "Date", "Amount", "Description", "Category", "Payment Method"],
+      ...expenses.map((expense) => [
+        expense.id ?? "",
+        expense.expense_date ?? "",
+        expense.amount != null ? Number(expense.amount) : "",
+        expense.description ?? "",
+        expense.categories?.name ?? "",
+        expense.payment_method ?? "",
+      ]),
+    ];
+
+    const worksheet = utils.aoa_to_sheet(data);
+    const workbook = utils.book_new();
+    utils.book_append_sheet(workbook, worksheet, "Expenses");
+
+    const xlsxBuffer = write(workbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([xlsxBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  });
+}
+
+/**
  * Dismiss a single alert owned by the authenticated user.
  *
  * @param {string} token - Bearer token.
