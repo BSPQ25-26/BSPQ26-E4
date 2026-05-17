@@ -102,6 +102,7 @@ export async function getMe(token) {
  * @param {string} [profileData.full_name] - Display name.
  * @param {string} [profileData.currency] - Preferred currency code (e.g. `"EUR"`).
  * @param {number} [profileData.monthly_income] - Self-reported monthly income.
+ * @param {string} [profileData.language] - Preferred UI language code (`"en"`, `"es"`, `"eu"`).
  * @returns {Promise<Object>} Resolves with the updated profile row.
  * @throws {Error} If the backend rejects the payload.
  */
