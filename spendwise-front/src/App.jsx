@@ -10,6 +10,8 @@
  */
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -27,7 +29,8 @@ import DashboardPage from "./pages/DashboardPage";
  */
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">Loading...</div>;
+  const { t } = useTranslation();
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">{t("common.loading")}</div>;
   return user ? children : <Navigate to="/login" replace />;
 }
 
@@ -42,7 +45,8 @@ function PrivateRoute({ children }) {
  */
 function PublicRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">Loading...</div>;
+  const { t } = useTranslation();
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">{t("common.loading")}</div>;
   return user ? <Navigate to="/dashboard" replace /> : children;
 }
 
