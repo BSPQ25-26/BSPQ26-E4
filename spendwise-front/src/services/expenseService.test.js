@@ -21,7 +21,26 @@ import {
   updateExpense,
   deleteExpense,
   getDashboardSummary,
+  exportExpensesToCSV,
 } from './expenseService'
+
+/**
+ * Stable reference object used by the hoisted xlsx vi.mock factory.
+ * Because vi.mock() is hoisted before variable declarations, closures
+ * inside the factory cannot safely reference `let`/`const` variables
+ * declared in the test body. Instead we use a plain object whose
+ * properties are mutated per-test.
+ */
+const xlsxCapture = { data: null }
+
+vi.mock('xlsx', () => ({
+  utils: {
+    aoa_to_sheet: vi.fn((data) => { xlsxCapture.data = data; return {} }),
+    book_new: vi.fn(() => ({})),
+    book_append_sheet: vi.fn(),
+  },
+  write: vi.fn(() => new Uint8Array([1, 2, 3])),
+}))
 
 function fakeResponse({ ok = true, status = 200, body = {} } = {}) {
   return {
@@ -264,6 +283,114 @@ describe('expenseService', () => {
       expect(result).toEqual(summary)
       const [url] = fetch.mock.calls[0]
       expect(url).toContain('/dashboard/summary?')
+    })
+  })
+
+  describe('exportExpensesToCSV()', () => {
+    /** @type {{ href: string, setAttribute: ReturnType<typeof vi.fn>, click: ReturnType<typeof vi.fn> }} */
+    let createdLink
+
+    beforeEach(() => {
+      // Reset the capture buffer before each test.
+      xlsxCapture.data = null
+
+      // Stub URL APIs that are unavailable in jsdom.
+      vi.stubGlobal('URL', {
+        createObjectURL: vi.fn().mockReturnValue('blob:mock-url'),
+        revokeObjectURL: vi.fn(),
+      })
+
+      // Capture the <a> element created for the download.
+      createdLink = null
+      vi.spyOn(document, 'createElement').mockImplementation((tag) => {
+        if (tag === 'a') {
+          const a = { href: '', setAttribute: vi.fn(), click: vi.fn() }
+          createdLink = a
+          return a
+        }
+        return Object.create(HTMLElement.prototype)
+      })
+      vi.spyOn(document.body, 'appendChild').mockImplementation(() => {})
+      vi.spyOn(document.body, 'removeChild').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+      vi.unstubAllGlobals()
+      vi.resetModules()
+    })
+
+    it('passes a header row with the expected column names to SheetJS', async () => {
+      exportExpensesToCSV([])
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(xlsxCapture.data[0]).toEqual(['ID', 'Date', 'Amount', 'Description', 'Category', 'Payment Method'])
+    })
+
+    it('passes each expense as a data row to SheetJS', async () => {
+      const expenses = [
+        {
+          id: 1,
+          expense_date: '2026-05-01',
+          amount: 42.5,
+          description: 'Lunch',
+          categories: { name: 'Food' },
+          payment_method: 'card',
+        },
+      ]
+
+      exportExpensesToCSV(expenses)
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(xlsxCapture.data).toHaveLength(2) // header + 1 data row
+      expect(xlsxCapture.data[1]).toEqual([1, '2026-05-01', 42.5, 'Lunch', 'Food', 'card'])
+    })
+
+    it('stores the amount as a Number so Excel treats it as numeric', async () => {
+      const expenses = [{
+        id: 2, expense_date: '2026-05-02', amount: '19.99',
+        description: null, categories: null, payment_method: 'cash',
+      }]
+
+      exportExpensesToCSV(expenses)
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(typeof xlsxCapture.data[1][2]).toBe('number')
+      expect(xlsxCapture.data[1][2]).toBeCloseTo(19.99)
+    })
+
+    it('handles expenses with no category (categories is undefined)', async () => {
+      const expenses = [{
+        id: 3, expense_date: '2026-05-03', amount: 8,
+        description: null, categories: undefined, payment_method: 'transfer',
+      }]
+
+      exportExpensesToCSV(expenses)
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(xlsxCapture.data[1][3]).toBe('') // description
+      expect(xlsxCapture.data[1][4]).toBe('') // category
+    })
+
+    it('creates only the header row when the expenses array is empty', async () => {
+      exportExpensesToCSV([])
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(xlsxCapture.data).toHaveLength(1)
+    })
+
+    it('uses the provided filename as the download attribute', async () => {
+      exportExpensesToCSV([], 'my-export.xlsx')
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(createdLink.setAttribute).toHaveBeenCalledWith('download', 'my-export.xlsx')
+    })
+
+    it('defaults to "spendwise-expenses.xlsx" when no filename is given', async () => {
+      exportExpensesToCSV([])
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(createdLink.setAttribute).toHaveBeenCalledWith('download', 'spendwise-expenses.xlsx')
     })
   })
 })
