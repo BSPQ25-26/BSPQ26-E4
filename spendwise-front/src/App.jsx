@@ -9,6 +9,7 @@
  * @module App
  */
 
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -68,6 +69,24 @@ function PublicRoute({ children }) {
  * @returns {JSX.Element}
  */
 export default function App() {
+  const { i18n } = useTranslation();
+
+  // Mirror the active language onto the root `<html lang="...">`
+  // attribute so screen readers, browser spellcheck and the CSS
+  // `:lang()` selector all follow the user's choice. The static value
+  // in `index.html` is just the initial hint for the very first
+  // paint; from then on this effect keeps it in sync.
+  useEffect(() => {
+    const apply = (lng) => {
+      if (typeof document !== "undefined") {
+        document.documentElement.lang = lng;
+      }
+    };
+    apply(i18n.resolvedLanguage || i18n.language);
+    i18n.on("languageChanged", apply);
+    return () => i18n.off("languageChanged", apply);
+  }, [i18n]);
+
   return (
     <AuthProvider>
       <BrowserRouter>
