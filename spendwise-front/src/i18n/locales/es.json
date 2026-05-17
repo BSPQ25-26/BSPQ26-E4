@@ -1,0 +1,179 @@
+{
+  "common": {
+    "appName": "SpendWise",
+    "loading": "Cargando...",
+    "loadingShort": "Cargando…",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "close": "Cerrar",
+    "none": "— ninguna —"
+  },
+  "language": {
+    "label": "Idioma"
+  },
+  "nav": {
+    "alertsAria": "Alertas",
+    "signOut": "Cerrar sesión",
+    "dashboard": "Panel",
+    "addExpense": "Añadir Gasto",
+    "manageCategories": "Gestionar Categorías",
+    "alerts": "Alertas",
+    "settings": "Ajustes"
+  },
+  "auth": {
+    "login": {
+      "subtitle": "Inicia sesión en tu cuenta",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "password": "Contraseña",
+      "passwordPlaceholder": "••••••••",
+      "submit": "Iniciar sesión",
+      "submitting": "Iniciando sesión...",
+      "noAccount": "¿No tienes una cuenta?",
+      "createOne": "Créala"
+    },
+    "register": {
+      "subtitle": "Crea tu cuenta",
+      "fullName": "Nombre completo",
+      "fullNamePlaceholder": "Juan Pérez",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "password": "Contraseña",
+      "passwordPlaceholder": "Mínimo 6 caracteres",
+      "submit": "Crear cuenta",
+      "submitting": "Creando cuenta...",
+      "success": "¡Cuenta creada! Revisa tu correo para confirmarla y luego inicia sesión.",
+      "haveAccount": "¿Ya tienes una cuenta?",
+      "signIn": "Inicia sesión"
+    }
+  },
+  "dashboard": {
+    "error": "No se pudieron cargar algunos datos del panel.",
+    "quickStats": "Resumen rápido",
+    "totalMonthly": "Gasto total del mes",
+    "averageDaily": "Coste medio diario",
+    "filters": "Filtros",
+    "downloadCsv": "Descargar CSV",
+    "downloadCsvHint": "Descargar gastos en CSV",
+    "downloadCsvDisabled": "No hay gastos para exportar",
+    "clearFilters": "Limpiar filtros",
+    "category": "Categoría",
+    "allCategories": "Todas las categorías",
+    "startDate": "Fecha de inicio",
+    "endDate": "Fecha de fin",
+    "loadingCharts": "Cargando gráficos...",
+    "noExpenses": "Aún no hay gastos. Añade tu primer gasto para ver los gráficos.",
+    "expensesByCategory": "Gastos por categoría",
+    "dailyExpenses": "Gastos diarios - {{label}}",
+    "dayOfMonth": "Día del mes",
+    "amountAxis": "Importe ({{currency}})",
+    "amount": "Importe",
+    "dayFallback": "Día {{day}}",
+    "monthLabel": {
+      "range": "{{start}} hasta {{end}}",
+      "from": "Desde {{start}}",
+      "until": "Hasta {{end}}"
+    }
+  },
+  "expenses": {
+    "add": "Añadir gasto",
+    "amount": "Importe",
+    "amountPlaceholder": "0,00",
+    "date": "Fecha",
+    "category": "Categoría",
+    "payment": "Pago",
+    "description": "Descripción",
+    "descriptionPlaceholder": "p. ej. Comida, Compra…",
+    "submit": "Añadir gasto",
+    "submitting": "Añadiendo…",
+    "emptyMonth": "Todavía no hay gastos este mes.",
+    "defaultName": "Gasto",
+    "editAria": "Editar",
+    "deleteAria": "Eliminar",
+    "edit": {
+      "title": "Editar gasto",
+      "closeAria": "Cerrar",
+      "saving": "Guardando…",
+      "save": "Guardar cambios"
+    },
+    "paymentMethods": {
+      "cash": "efectivo",
+      "card": "tarjeta",
+      "transfer": "transferencia"
+    }
+  },
+  "categories": {
+    "createTitle": "Crear categoría",
+    "name": "Nombre",
+    "namePlaceholder": "Compra",
+    "icon": "Icono",
+    "color": "Color",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Comidas, compra y supermercado.",
+    "submit": "Crear categoría",
+    "available": "Categorías disponibles",
+    "summary": "{{mine}} propias · {{shared}} compartidas",
+    "emptyAll": "Todavía no hay categorías disponibles.",
+    "myCategories": "Mis categorías",
+    "myEmpty": "Aún no has creado ninguna categoría personal.",
+    "noColor": "Sin color",
+    "sharedCategories": "Categorías compartidas",
+    "sharedEmpty": "No hay categorías compartidas visibles.",
+    "sharedBadge": "Compartida",
+    "hide": "Ocultar de mis categorías",
+    "hiddenCategories": "Categorías compartidas ocultas",
+    "hiddenEmpty": "No has ocultado ninguna categoría compartida.",
+    "hiddenBadge": "Oculta",
+    "restore": "Restaurar a mis categorías",
+    "edit": {
+      "title": "Editar categoría",
+      "closeAria": "Cerrar editor de categoría",
+      "save": "Guardar categoría"
+    },
+    "icons": {
+      "Generic": "Genérico",
+      "Food": "Comida",
+      "Groceries": "Compra",
+      "Home": "Hogar",
+      "Transport": "Transporte",
+      "Fuel": "Combustible",
+      "Bills": "Facturas",
+      "Entertainment": "Ocio",
+      "Health": "Salud",
+      "Travel": "Viajes",
+      "Education": "Educación",
+      "Pets": "Mascotas",
+      "Gifts": "Regalos",
+      "Clothes": "Ropa",
+      "Work": "Trabajo",
+      "Other": "Otros"
+    }
+  },
+  "alerts": {
+    "title": "Alertas",
+    "pending": "{{count}} pendiente(s)",
+    "empty": "No hay alertas pendientes. Estás dentro de todos tus presupuestos.",
+    "budgetExceeded": "Presupuesto superado",
+    "limit": " — límite {{amount}} {{currency}} ({{month}}/{{year}})",
+    "triggeredBy": "Activada por: {{name}} · {{amount}} {{currency}}",
+    "expenseFallback": "gasto",
+    "dismiss": "Descartar"
+  },
+  "settings": {
+    "title": "Perfil y preferencias",
+    "subtitle": "Los cambios se guardan inmediatamente en tu cuenta.",
+    "email": "Correo electrónico",
+    "displayName": "Nombre visible",
+    "displayNamePlaceholder": "Tu nombre",
+    "currency": "Moneda",
+    "income": "Ingresos mensuales (opcional)",
+    "incomePlaceholder": "0,00",
+    "language": "Idioma",
+    "success": "Perfil actualizado correctamente.",
+    "save": "Guardar cambios",
+    "saving": "Guardando…"
+  }
+}

@@ -1,0 +1,179 @@
+{
+  "common": {
+    "appName": "SpendWise",
+    "loading": "Kargatzen...",
+    "loadingShort": "Kargatzen…",
+    "cancel": "Utzi",
+    "save": "Gorde",
+    "saving": "Gordetzen…",
+    "edit": "Editatu",
+    "delete": "Ezabatu",
+    "close": "Itxi",
+    "none": "— bat ere ez —"
+  },
+  "language": {
+    "label": "Hizkuntza"
+  },
+  "nav": {
+    "alertsAria": "Alertak",
+    "signOut": "Amaitu saioa",
+    "dashboard": "Panela",
+    "addExpense": "Gehitu gastua",
+    "manageCategories": "Kudeatu kategoriak",
+    "alerts": "Alertak",
+    "settings": "Ezarpenak"
+  },
+  "auth": {
+    "login": {
+      "subtitle": "Hasi saioa zure kontuan",
+      "email": "Helbide elektronikoa",
+      "emailPlaceholder": "zu@adibidea.com",
+      "password": "Pasahitza",
+      "passwordPlaceholder": "••••••••",
+      "submit": "Hasi saioa",
+      "submitting": "Saioa hasten...",
+      "noAccount": "Ez duzu konturik?",
+      "createOne": "Sortu bat"
+    },
+    "register": {
+      "subtitle": "Sortu zure kontua",
+      "fullName": "Izen-abizenak",
+      "fullNamePlaceholder": "Jon Etxe",
+      "email": "Helbide elektronikoa",
+      "emailPlaceholder": "zu@adibidea.com",
+      "password": "Pasahitza",
+      "passwordPlaceholder": "Gutxienez 6 karaktere",
+      "submit": "Sortu kontua",
+      "submitting": "Kontua sortzen...",
+      "success": "Kontua sortuta! Begiratu zure posta baieztatzeko eta gero hasi saioa.",
+      "haveAccount": "Baduzu jada konturik?",
+      "signIn": "Hasi saioa"
+    }
+  },
+  "dashboard": {
+    "error": "Paneleko datu batzuk ezin izan dira kargatu.",
+    "quickStats": "Estatistika azkarrak",
+    "totalMonthly": "Hileko gastu osoa",
+    "averageDaily": "Eguneko batez besteko gastua",
+    "filters": "Iragazkiak",
+    "downloadCsv": "Deskargatu CSV",
+    "downloadCsvHint": "Deskargatu gastuak CSV gisa",
+    "downloadCsvDisabled": "Ez dago gasturik esportatzeko",
+    "clearFilters": "Garbitu iragazkiak",
+    "category": "Kategoria",
+    "allCategories": "Kategoria guztiak",
+    "startDate": "Hasiera data",
+    "endDate": "Amaiera data",
+    "loadingCharts": "Grafikoak kargatzen...",
+    "noExpenses": "Oraindik ez dago gasturik. Gehitu zure lehen gastua grafikoak ikusteko.",
+    "expensesByCategory": "Gastuak kategoriaka",
+    "dailyExpenses": "Eguneko gastuak - {{label}}",
+    "dayOfMonth": "Hileko eguna",
+    "amountAxis": "Zenbatekoa ({{currency}})",
+    "amount": "Zenbatekoa",
+    "dayFallback": "{{day}}. eguna",
+    "monthLabel": {
+      "range": "{{start}}etik {{end}}era",
+      "from": "{{start}}etik aurrera",
+      "until": "{{end}}era arte"
+    }
+  },
+  "expenses": {
+    "add": "Gehitu gastua",
+    "amount": "Zenbatekoa",
+    "amountPlaceholder": "0,00",
+    "date": "Data",
+    "category": "Kategoria",
+    "payment": "Ordainketa",
+    "description": "Deskribapena",
+    "descriptionPlaceholder": "adib. Bazkaria, Erosketa…",
+    "submit": "Gehitu gastua",
+    "submitting": "Gehitzen…",
+    "emptyMonth": "Hil honetan oraindik ez dago gasturik.",
+    "defaultName": "Gastua",
+    "editAria": "Editatu",
+    "deleteAria": "Ezabatu",
+    "edit": {
+      "title": "Editatu gastua",
+      "closeAria": "Itxi",
+      "saving": "Gordetzen…",
+      "save": "Gorde aldaketak"
+    },
+    "paymentMethods": {
+      "cash": "eskudirua",
+      "card": "txartela",
+      "transfer": "transferentzia"
+    }
+  },
+  "categories": {
+    "createTitle": "Sortu kategoria",
+    "name": "Izena",
+    "namePlaceholder": "Erosketa",
+    "icon": "Ikonoa",
+    "color": "Kolorea",
+    "description": "Deskribapena",
+    "descriptionPlaceholder": "Janaria, erosketa eta supermerkatua.",
+    "submit": "Sortu kategoria",
+    "available": "Eskuragarri dauden kategoriak",
+    "summary": "{{mine}} nireak · {{shared}} partekatuak",
+    "emptyAll": "Oraindik ez dago kategoriarik.",
+    "myCategories": "Nire kategoriak",
+    "myEmpty": "Oraindik ez duzu kategoria pertsonalik sortu.",
+    "noColor": "Kolorerik ez",
+    "sharedCategories": "Kategoria partekatuak",
+    "sharedEmpty": "Ez dago kategoria partekatu ikusgairik.",
+    "sharedBadge": "Partekatua",
+    "hide": "Ezkutatu nire kategorietatik",
+    "hiddenCategories": "Ezkutatutako kategoria partekatuak",
+    "hiddenEmpty": "Ez duzu kategoria partekaturik ezkutatu.",
+    "hiddenBadge": "Ezkutatua",
+    "restore": "Berreskuratu nire kategorietara",
+    "edit": {
+      "title": "Editatu kategoria",
+      "closeAria": "Itxi kategoria editorea",
+      "save": "Gorde kategoria"
+    },
+    "icons": {
+      "Generic": "Orokorra",
+      "Food": "Janaria",
+      "Groceries": "Erosketa",
+      "Home": "Etxea",
+      "Transport": "Garraioa",
+      "Fuel": "Erregaia",
+      "Bills": "Fakturak",
+      "Entertainment": "Aisia",
+      "Health": "Osasuna",
+      "Travel": "Bidaiak",
+      "Education": "Hezkuntza",
+      "Pets": "Maskotak",
+      "Gifts": "Opariak",
+      "Clothes": "Arropa",
+      "Work": "Lana",
+      "Other": "Bestelakoak"
+    }
+  },
+  "alerts": {
+    "title": "Alertak",
+    "pending": "{{count}} zain",
+    "empty": "Ez dago alerta zain. Zure aurrekontu guztien barruan zaude.",
+    "budgetExceeded": "Aurrekontua gainditua",
+    "limit": " — muga {{amount}} {{currency}} ({{month}}/{{year}})",
+    "triggeredBy": "Eragilea: {{name}} · {{amount}} {{currency}}",
+    "expenseFallback": "gastua",
+    "dismiss": "Baztertu"
+  },
+  "settings": {
+    "title": "Profila eta hobespenak",
+    "subtitle": "Aldaketak berehala gordetzen dira zure kontuan.",
+    "email": "Helbide elektronikoa",
+    "displayName": "Ikusgai dagoen izena",
+    "displayNamePlaceholder": "Zure izena",
+    "currency": "Moneta",
+    "income": "Hileko sarrerak (aukerakoa)",
+    "incomePlaceholder": "0,00",
+    "language": "Hizkuntza",
+    "success": "Profila ondo eguneratu da.",
+    "save": "Gorde aldaketak",
+    "saving": "Gordetzen…"
+  }
+}

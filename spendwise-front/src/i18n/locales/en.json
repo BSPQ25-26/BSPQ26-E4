@@ -1,0 +1,179 @@
+{
+  "common": {
+    "appName": "SpendWise",
+    "loading": "Loading...",
+    "loadingShort": "Loading…",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "none": "— none —"
+  },
+  "language": {
+    "label": "Language"
+  },
+  "nav": {
+    "alertsAria": "Alerts",
+    "signOut": "Sign out",
+    "dashboard": "Dashboard",
+    "addExpense": "Add Expense",
+    "manageCategories": "Manage Categories",
+    "alerts": "Alerts",
+    "settings": "Settings"
+  },
+  "auth": {
+    "login": {
+      "subtitle": "Sign in to your account",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "••••••••",
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "noAccount": "Don't have an account?",
+      "createOne": "Create one"
+    },
+    "register": {
+      "subtitle": "Create your account",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "Jane Doe",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "Min. 6 characters",
+      "submit": "Create account",
+      "submitting": "Creating account...",
+      "success": "Account created! Check your email to confirm, then sign in.",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in"
+    }
+  },
+  "dashboard": {
+    "error": "Some dashboard data could not be loaded.",
+    "quickStats": "Quick Stats",
+    "totalMonthly": "Total Monthly Spending",
+    "averageDaily": "Average Daily Costs",
+    "filters": "Filters",
+    "downloadCsv": "Download CSV",
+    "downloadCsvHint": "Download expenses as CSV",
+    "downloadCsvDisabled": "No expenses to export",
+    "clearFilters": "Clear Filters",
+    "category": "Category",
+    "allCategories": "All Categories",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "loadingCharts": "Loading charts...",
+    "noExpenses": "No expenses yet. Add your first expense to see charts.",
+    "expensesByCategory": "Expenses by Category",
+    "dailyExpenses": "Daily Expenses - {{label}}",
+    "dayOfMonth": "Day of Month",
+    "amountAxis": "Amount ({{currency}})",
+    "amount": "Amount",
+    "dayFallback": "Day {{day}}",
+    "monthLabel": {
+      "range": "{{start}} to {{end}}",
+      "from": "From {{start}}",
+      "until": "Until {{end}}"
+    }
+  },
+  "expenses": {
+    "add": "Add expense",
+    "amount": "Amount",
+    "amountPlaceholder": "0.00",
+    "date": "Date",
+    "category": "Category",
+    "payment": "Payment",
+    "description": "Description",
+    "descriptionPlaceholder": "e.g. Lunch, Groceries…",
+    "submit": "Add expense",
+    "submitting": "Adding…",
+    "emptyMonth": "No expenses this month yet.",
+    "defaultName": "Expense",
+    "editAria": "Edit",
+    "deleteAria": "Delete",
+    "edit": {
+      "title": "Edit expense",
+      "closeAria": "Close",
+      "saving": "Saving…",
+      "save": "Save changes"
+    },
+    "paymentMethods": {
+      "cash": "cash",
+      "card": "card",
+      "transfer": "transfer"
+    }
+  },
+  "categories": {
+    "createTitle": "Create category",
+    "name": "Name",
+    "namePlaceholder": "Groceries",
+    "icon": "Icon",
+    "color": "Color",
+    "description": "Description",
+    "descriptionPlaceholder": "Meals, groceries and supermarket purchases.",
+    "submit": "Create category",
+    "available": "Available categories",
+    "summary": "{{mine}} mine · {{shared}} shared",
+    "emptyAll": "No categories available yet.",
+    "myCategories": "My Categories",
+    "myEmpty": "You have not created any personal categories yet.",
+    "noColor": "No color",
+    "sharedCategories": "Shared Categories",
+    "sharedEmpty": "No shared categories are currently visible.",
+    "sharedBadge": "Shared",
+    "hide": "Hide from my categories",
+    "hiddenCategories": "Hidden Shared Categories",
+    "hiddenEmpty": "You have not hidden any shared categories.",
+    "hiddenBadge": "Hidden",
+    "restore": "Restore to my categories",
+    "edit": {
+      "title": "Edit category",
+      "closeAria": "Close category editor",
+      "save": "Save category"
+    },
+    "icons": {
+      "Generic": "Generic",
+      "Food": "Food",
+      "Groceries": "Groceries",
+      "Home": "Home",
+      "Transport": "Transport",
+      "Fuel": "Fuel",
+      "Bills": "Bills",
+      "Entertainment": "Entertainment",
+      "Health": "Health",
+      "Travel": "Travel",
+      "Education": "Education",
+      "Pets": "Pets",
+      "Gifts": "Gifts",
+      "Clothes": "Clothes",
+      "Work": "Work",
+      "Other": "Other"
+    }
+  },
+  "alerts": {
+    "title": "Alerts",
+    "pending": "{{count}} pending",
+    "empty": "No pending alerts. You are within all your budgets.",
+    "budgetExceeded": "Budget exceeded",
+    "limit": " — limit {{amount}} {{currency}} ({{month}}/{{year}})",
+    "triggeredBy": "Triggered by: {{name}} · {{amount}} {{currency}}",
+    "expenseFallback": "expense",
+    "dismiss": "Dismiss"
+  },
+  "settings": {
+    "title": "Profile & Preferences",
+    "subtitle": "Changes are saved immediately to your account.",
+    "email": "Email",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Your name",
+    "currency": "Currency",
+    "income": "Monthly Income (optional)",
+    "incomePlaceholder": "0.00",
+    "language": "Language",
+    "success": "Profile updated successfully.",
+    "save": "Save changes",
+    "saving": "Saving…"
+  }
+}
