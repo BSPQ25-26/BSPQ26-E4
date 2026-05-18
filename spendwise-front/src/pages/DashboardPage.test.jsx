@@ -169,7 +169,7 @@ describe('DashboardPage', () => {
 
     expect(screen.queryByText(/real spending against monthly limits/i)).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /show budget comparison/i }))
+    await user.click(screen.getByRole('switch', { name: /budget comparison/i }))
 
     await waitFor(() => {
       expect(expenseService.getAlertStatuses).toHaveBeenCalledWith('tok', expect.objectContaining({
@@ -188,7 +188,7 @@ describe('DashboardPage', () => {
     const user = userEvent.setup()
     renderPage()
 
-    await user.click(screen.getByRole('button', { name: /show budget comparison/i }))
+    await user.click(screen.getByRole('switch', { name: /budget comparison/i }))
 
     expect(await screen.findByText(/no monthly limits found/i)).toBeInTheDocument()
   })
@@ -198,7 +198,7 @@ describe('DashboardPage', () => {
     const user = userEvent.setup()
     renderPage()
 
-    await user.click(screen.getByRole('button', { name: /show budget comparison/i }))
+    await user.click(screen.getByRole('switch', { name: /budget comparison/i }))
 
     expect(await screen.findByText('comparison unavailable')).toBeInTheDocument()
   })

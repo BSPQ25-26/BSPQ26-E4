@@ -705,13 +705,27 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-gray-700">Quick Stats</h3>
                 <div className="flex flex-wrap justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowBudgetComparison((prev) => !prev)}
-                    className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
-                  >
-                    {showBudgetComparison ? "Hide budget comparison" : "Show budget comparison"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-600">Budget comparison</span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={showBudgetComparison}
+                      aria-label="Budget comparison"
+                      onClick={() => setShowBudgetComparison((prev) => !prev)}
+                      className={`relative inline-flex h-8 w-16 shrink-0 items-center rounded-full border transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                        showBudgetComparison
+                          ? "border-emerald-400 bg-emerald-400"
+                          : "border-gray-300 bg-gray-200"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-7 w-7 transform rounded-full bg-white shadow-md transition-transform duration-200 ${
+                          showBudgetComparison ? "translate-x-8" : "translate-x-0.5"
+                        }`}
+                      />
+                    </button>
+                  </div>
                   <div className="flex gap-2">
                     <select
                       value={month}
