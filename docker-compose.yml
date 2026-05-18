@@ -4,8 +4,11 @@ services:
     build:
       context: ./spendwise-backend
       dockerfile: Dockerfile
+    # Host port is configurable via BACKEND_PORT in the root .env so
+    # developers can avoid clashes with anything else already listening
+    # on 8080. The container port stays 8080 internally.
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
     environment:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
@@ -26,8 +29,11 @@ services:
         # /api/v1 is a relative path — nginx proxies it to the backend
         # container, so the browser never needs to know the backend port.
         VITE_API_BASE: /api/v1
+    # Host port is configurable via FRONTEND_PORT in the root .env. The
+    # nginx container always listens on 80 internally — only the host
+    # mapping changes when overridden.
     ports:
-      - "3000:80"
+      - "${FRONTEND_PORT:-3000}:80"
     depends_on:
       backend:
         condition: service_healthy
