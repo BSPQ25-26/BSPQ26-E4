@@ -34,6 +34,7 @@ import {
   deleteExpense,
   getAlerts,
   dismissAlert,
+  exportExpensesToCSV,
 } from "../services/expenseService";
 import {
   PieChart, Pie, Cell,
@@ -67,7 +68,7 @@ const CHART_COLORS = [
  * Predefined icons available for categories so users do not need to
  * type emojis manually from the keyboard.
  *
- * @type {{ value: string, label: string }[]}
+ * @type {Array<{value: string, label: string}>}
  */
 const CATEGORY_ICONS = [
   { value: "🏷️", label: "Generic" },
@@ -551,6 +552,19 @@ export default function DashboardPage() {
   const myCategories = categories.filter((category) => category.user_id);
   const sharedCategories = categories.filter((category) => !category.user_id);
 
+  /**
+   * Build a filename that embeds the active period and trigger the CSV
+   * download using the expenses already loaded into component state.
+   *
+   * @returns {void}
+   */
+  function handleExportCSV() {
+    const periodLabel = startDate && endDate
+      ? `${startDate}_${endDate}`
+      : `${year}-${String(month).padStart(2, "0")}`;
+    exportExpensesToCSV(expenses, `spendwise-expenses-${periodLabel}.xlsx`);
+  }
+
   // Compute Quick Stats from local expenses array
   const monthTotal = analytics.month_total;
   const selectedRangeDays = startDate && endDate
@@ -714,16 +728,30 @@ export default function DashboardPage() {
             <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-semibold text-gray-900">Filters</h3>
-                <button
-                  onClick={() => {
-                    setSelectedCategory("");
-                    setStartDate("");
-                    setEndDate("");
-                  }}
-                  className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  Clear Filters
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    id="download-csv-btn"
+                    onClick={handleExportCSV}
+                    disabled={expenses.length === 0}
+                    title={expenses.length === 0 ? "No expenses to export" : "Download expenses as CSV"}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                    Download CSV
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedCategory("");
+                      setStartDate("");
+                      setEndDate("");
+                    }}
+                    className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>

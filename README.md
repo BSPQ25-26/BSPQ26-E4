@@ -54,3 +54,69 @@ npm test
 cd spendwise-front
 npm run test:integration
 ```
+
+## Documentation
+
+The repository ships a unified technical-documentation site that bundles
+the backend API reference, the frontend code reference, the test
+coverage reports and a downloadable PDF manual.
+
+### Build everything locally
+
+Requires Python 3.11+, Node 20+ and a working LaTeX install
+(`latexmk`, `texlive-latex-extra`, `texlive-fonts-recommended`).
+
+```bash
+./scripts/build-docs.sh
+# open site/index.html in your browser
+```
+
+The script produces `site/` at the repo root with this layout:
+
+| Path                                  | Source                            |
+| ------------------------------------- | --------------------------------- |
+| `site/index.html`                     | Landing page (`docs-site/`)       |
+| `site/backend/`                       | Sphinx HTML — FastAPI reference   |
+| `site/backend-pdf/spendwisebackend.pdf` | Sphinx LaTeX → `pdflatex` PDF    |
+| `site/frontend/`                      | JSDoc — React reference           |
+| `site/coverage/backend/`              | pytest `--cov-report=html`        |
+| `site/coverage/frontend/`             | vitest `--coverage` (v8)          |
+
+### Build a single piece
+
+```bash
+# Backend HTML only
+cd spendwise-backend/docs && make html
+
+# Backend PDF only
+cd spendwise-backend/docs && make latexpdf
+
+# Frontend JSDoc only
+cd spendwise-front && npm run docs
+```
+
+### Published site
+
+Every push to `main` triggers `.github/workflows/docs.yml`, which runs
+the same build script and deploys the result to GitHub Pages. After the
+first successful run, the site is available at:
+
+```
+https://bspq25-26.github.io/BSPQ26-E4/
+```
+
+> Enable Pages in **Settings → Pages → Source: GitHub Actions** if it
+> is not on yet.
+
+## Releases
+
+Sprint releases are cut as annotated git tags from `main` once all
+Sprint exit criteria are green (tests passing, docs deploy successful).
+
+```bash
+# Sprint 3 release
+git checkout main
+git pull
+git tag -a v3.0.0 -m "Sprint 3 — Continuous Integration & Documentation"
+git push origin v3.0.0
+```
