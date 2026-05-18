@@ -1,5 +1,7 @@
 # SpendWise
 
+🇬🇧 English &nbsp;·&nbsp; 🇪🇸 Español &nbsp;·&nbsp; 🏴󠁥󠁳󠁰󠁶󠁿 Euskara
+
 SpendWise is a personal expense tracking application that helps you manage your finances. Track your daily expenses, categorize them, and visualize your spending patterns through interactive charts. Monitor your budget and gain insights into where your money goes each month.
 
 ## Website (live demo)
@@ -74,26 +76,6 @@ npm run dev
 | Frontend (Vite)    | http://localhost:5173              |
 | Backend            | http://localhost:8080              |
 | Backend Swagger UI | http://localhost:8080/docs         |
-
-## Languages
-
-The frontend supports **English** (default), **Spanish** and **Basque**.
-Users can pick their language from the switcher in the login/register
-pages, the navbar, or the Settings tab. The choice is persisted to
-`localStorage` (`sw_lang` key) and, for authenticated users, also
-synced to the backend so the preference follows the account across
-devices.
-
-To enable backend persistence, run this migration once on the
-`user_profiles` table in Supabase:
-
-```sql
-ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en';
-```
-
-Without the column, the language switcher still works locally — the
-backend update is best-effort and silently no-ops if the column is
-missing.
 
 ## Testing
 
@@ -222,15 +204,3 @@ talks to the Vercel domain, and Vercel proxies `/api/` to your real
 backend. With this in place you can leave `VITE_API_BASE` unset and
 the default `/api/v1` keeps working.
 
-## Releases
-
-Sprint releases are cut as annotated git tags from `main` once all
-Sprint exit criteria are green (tests passing, docs deploy successful).
-
-```bash
-# Sprint 3 release
-git checkout main
-git pull
-git tag -a v3.0.0 -m "Sprint 3 — Continuous Integration & Documentation"
-git push origin v3.0.0
-```
