@@ -1,34 +1,55 @@
 # SpendWise
 
+<img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/gb.svg" width="20" alt="English flag"> English &nbsp;·&nbsp;
+<img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/es.svg" width="20" alt="Spanish flag"> Español &nbsp;·&nbsp;
+<img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/es-pv.svg" width="20" alt="Basque flag"> Euskara
+
 SpendWise is a personal expense tracking application that helps you manage your finances. Track your daily expenses, categorize them, and visualize your spending patterns through interactive charts. Monitor your budget and gain insights into where your money goes each month.
 
-## Setup
+## Website (live demo)
 
-### Backend
+A hosted version of the frontend is online here:
+
+`https://<your-project>.vercel.app` *(← replace after the first Vercel deploy)*
+
+See [Deploy on Vercel](#deploy-on-vercel) below for the project settings, environment variable and optional `/api/` rewrite.
+
+## Quick start (Docker)
+
+The whole stack is dockerised. One command brings up the backend
+(FastAPI + Uvicorn), the frontend (React built by Vite, served by
+nginx) and wires them together so the browser never talks to the
+backend directly — nginx proxies `/api/` to the backend container.
 
 ```bash
-cd spendwise-backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8080
+# 1. Configure Supabase credentials (only the first time)
+cp .env.example .env
+# then edit .env and fill in real values
+
+# 2. Build and run everything
+docker compose up --build
 ```
 
-API available at:
-- http://localhost:8080
-- http://localhost:8080/docs (Swagger UI)
+Once the containers report healthy:
 
-### Frontend
+| Service            | URL                                |
+| ------------------ | ---------------------------------- |
+| Frontend           | http://localhost:3000              |
+| Backend (direct)   | http://localhost:8080              |
+| Backend Swagger UI | http://localhost:8080/docs         |
 
-```bash
-cd spendwise-front
-npm install
-npm run dev
-```
+Stop everything with `Ctrl+C` (or `docker compose down` from another
+terminal).
 
-App available at: http://localhost:5173
+## Development mode (hot reload)
 
-## Environment Variables
+Prefer this flow when you are actively writing code — Vite reloads the
+browser on every save and `uvicorn --reload` restarts the API on every
+Python edit. It needs two terminals, but skips the Docker rebuild
+cycle.
 
-Create a `.env` file in `spendwise-backend/` with:
+Before either terminal, create `spendwise-backend/.env` with the same
+Supabase keys as above:
 
 ```
 SUPABASE_URL=your_supabase_url
@@ -36,25 +57,27 @@ SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_KEY=your_service_key
 ```
 
-## Languages
+Backend (terminal 1):
 
-The frontend supports **English** (default), **Spanish** and **Basque**.
-Users can pick their language from the switcher in the login/register
-pages, the navbar, or the Settings tab. The choice is persisted to
-`localStorage` (`sw_lang` key) and, for authenticated users, also
-synced to the backend so the preference follows the account across
-devices.
-
-To enable backend persistence, run this migration once on the
-`user_profiles` table in Supabase:
-
-```sql
-ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en';
+```bash
+cd spendwise-backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8080
 ```
 
-Without the column, the language switcher still works locally — the
-backend update is best-effort and silently no-ops if the column is
-missing.
+Frontend (terminal 2):
+
+```bash
+cd spendwise-front
+npm install
+npm run dev
+```
+
+| Service            | URL                                |
+| ------------------ | ---------------------------------- |
+| Frontend (Vite)    | http://localhost:5173              |
+| Backend            | http://localhost:8080              |
+| Backend Swagger UI | http://localhost:8080/docs         |
 
 ## Testing
 
@@ -65,11 +88,16 @@ pytest tests/ -v
 ```
 
 ### Frontend Tests
+
+Unit + component tests:
+
 ```bash
 cd spendwise-front
 npm test
 ```
-# Test cases from the client side that calls the server
+
+Integration tests (client-side calls hitting the real server):
+
 ```bash
 cd spendwise-front
 npm run test:integration
@@ -128,15 +156,53 @@ https://bspq25-26.github.io/BSPQ26-E4/
 > Enable Pages in **Settings → Pages → Source: GitHub Actions** if it
 > is not on yet.
 
-## Releases
+## Deploy on Vercel
 
-Sprint releases are cut as annotated git tags from `main` once all
-Sprint exit criteria are green (tests passing, docs deploy successful).
+The frontend is set up to deploy on Vercel as a static SPA. The
+backend (FastAPI) is **not** part of the Vercel deploy — host it
+separately (Render, Railway, Fly, or a second Vercel project as
+serverless functions) and point the frontend at its public URL.
 
-```bash
-# Sprint 3 release
-git checkout main
-git pull
-git tag -a v3.0.0 -m "Sprint 3 — Continuous Integration & Documentation"
-git push origin v3.0.0
+### Project settings
+
+In Vercel **Settings → General**, configure:
+
+| Field            | Value              |
+| ---------------- | ------------------ |
+| Root directory   | `spendwise-front`  |
+| Framework preset | Vite               |
+| Build command    | `npm run build`    |
+| Output directory | `dist`             |
+| Install command  | `npm ci`           |
+
+### Environment variable
+
+In **Settings → Environment Variables**, add the public URL of the
+deployed backend so the compiled JS knows where to send API calls:
+
 ```
+VITE_API_BASE = https://<your-backend-host>/api/v1
+```
+
+Vite inlines this value at build time, so any change requires a fresh
+deploy.
+
+### Optional — rewrite `/api/` at the edge
+
+If you would rather keep the frontend code calling the relative path
+`/api/...` (so the same codebase stays portable between the Docker
+setup and Vercel), drop a `vercel.json` at `spendwise-front/`:
+
+```json
+{
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://<your-backend-host>/api/:path*" }
+  ]
+}
+```
+
+This mirrors what `nginx.conf` does in Docker — the browser only ever
+talks to the Vercel domain, and Vercel proxies `/api/` to your real
+backend. With this in place you can leave `VITE_API_BASE` unset and
+the default `/api/v1` keeps working.
+
