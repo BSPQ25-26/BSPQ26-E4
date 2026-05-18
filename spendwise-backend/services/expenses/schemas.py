@@ -23,6 +23,7 @@ class ExpenseCreate(BaseModel):
     """
 
     amount: float
+    currency: str = "EUR"
     description: Optional[str] = None
     category_id: Optional[int] = None
     expense_date: date = date.today()
@@ -36,6 +37,7 @@ class ExpenseUpdate(BaseModel):
     """
 
     amount: Optional[float] = None
+    currency: Optional[str] = None
     description: Optional[str] = None
     category_id: Optional[int] = None
     expense_date: Optional[date] = None

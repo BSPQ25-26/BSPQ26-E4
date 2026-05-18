@@ -9,6 +9,7 @@ filters guarantee the data is owned by the caller.
 import calendar
 
 from core.database import supabase_admin as supabase
+from app.utils.currency import convert_currency
 
 
 def get_expenses(
@@ -46,8 +47,6 @@ def get_expenses(
     if category_id:
         query = query.eq("category_id", category_id)
     if month and year:
-        # Compute the last day of the month so February gets 28/29 days,
-        # April gets 30, etc.
         last_day = calendar.monthrange(year, month)[1]
         query = query.gte("expense_date", f"{year}-{month:02d}-01")
         query = query.lte("expense_date", f"{year}-{month:02d}-{last_day}")
@@ -55,7 +54,28 @@ def get_expenses(
         query = query.gte("expense_date", start_date)
     if end_date:
         query = query.lte("expense_date", end_date)
-    return query.order("expense_date", desc=True).execute().data
+        
+    expenses = query.order("expense_date", desc=True).execute().data
+    
+    # 1. Buscamos la moneda del usuario
+    try:
+        user_profile = supabase.table("user_profiles").select("currency").eq("id", user_id).single().execute()
+        base_currency = user_profile.data.get("currency", "EUR") if user_profile.data else "EUR"
+    except Exception:
+        base_currency = "EUR"
+
+    # 2. Convertimos los importes para que coincidan con la moneda del Dashboard
+    for exp in expenses:
+        raw_amount = float(exp["amount"])
+        exp_currency = exp.get("currency", "EUR")
+        
+        if exp_currency != base_currency:
+            exp["amount"] = convert_currency(raw_amount, exp_currency, base_currency)
+            # Engañamos al frontend enviándole la moneda ya convertida
+            # El dato real (USD) sigue a salvo en tu base de datos y en "original_amount"
+            exp["currency"] = base_currency 
+            
+    return expenses
 
 
 def create_expense(user_id: str, data: dict):
@@ -91,6 +111,12 @@ def update_expense(expense_id: int, user_id: str, data: dict):
         dict | None: The updated row, or ``None`` if the expense did not
         exist or did not belong to the user.
     """
+    # We first check that the expense exists and belongs to the user
+    current_expense = supabase.table("expenses").select("id").eq("id", expense_id).eq("user_id", user_id).single().execute().data
+    
+    if not current_expense:
+        return None
+
     res = (
         supabase.table("expenses")
         .update(data)
@@ -140,9 +166,33 @@ def get_expense_analytics(
     category_map: dict[str, dict] = {}
     daily_map: dict[str, float] = {}
 
+    # 1. CONSULTAMOS LA MONEDA PREFERIDA DEL USUARIO EN SUPABASE
+    try:
+        user_profile = (
+            supabase.table("user_profiles")
+            .select("currency")
+            .eq("id", user_id) 
+            .single()
+            .execute()
+        )
+        base_currency = user_profile.data.get("currency", "EUR") if user_profile.data else "EUR"
+    except Exception:
+        # Si por algún motivo falla o el usuario no tiene perfil, usamos "EUR" por seguridad
+        base_currency = "EUR"
+
+    total_month_amount = 0.0
+
     # Single pass over the expenses building the two aggregation maps.
     for expense in expenses:
-        amount = float(expense["amount"])
+        raw_amount = float(expense["amount"])
+        expense_currency = expense.get("currency", "EUR") 
+
+        # 2. CONVERSIÓN "AL VUELO": Convertimos a la moneda de sus settings
+        if expense_currency != base_currency:
+            amount = convert_currency(raw_amount, expense_currency, base_currency)
+        else:
+            amount = raw_amount
+
         expense_date = expense["expense_date"]
         category = expense.get("categories") or {}
         category_name = category.get("name") or "Uncategorized"
@@ -156,6 +206,8 @@ def get_expense_analytics(
             }
         category_map[category_name]["value"] += amount
         daily_map[expense_date] = daily_map.get(expense_date, 0.0) + amount
+        
+        total_month_amount += amount
 
     # Categories: round the totals and sort highest spending first.
     category_breakdown = sorted(
@@ -182,7 +234,7 @@ def get_expense_analytics(
     ]
 
     return {
-        "month_total": round(sum(float(expense["amount"]) for expense in expenses), 2),
+        "month_total": round(total_month_amount, 2), 
         "category_breakdown": category_breakdown,
         "daily_breakdown": daily_breakdown,
-    }
+    }   
