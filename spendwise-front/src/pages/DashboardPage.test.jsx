@@ -18,6 +18,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import * as expenseService from '../services/expenseService'
 
 // Replace Recharts' ResponsiveContainer with a div that simply renders
 // its children. The real component measures its parent and bails out
@@ -56,6 +57,10 @@ vi.mock('../services/expenseService', () => ({
   createExpense: vi.fn(),
   updateExpense: vi.fn(),
   deleteExpense: vi.fn(),
+  getAlerts: vi.fn().mockResolvedValue([]),
+  getAlertStatuses: vi.fn().mockResolvedValue([]),
+  dismissAlert: vi.fn(),
+  exportExpensesToCSV: vi.fn(),
 }))
 
 const mockNavigate = vi.fn()
@@ -126,5 +131,75 @@ describe('DashboardPage', () => {
       expect(mockLogout).toHaveBeenCalled()
     })
     expect(mockNavigate).toHaveBeenCalledWith('/login')
+  })
+
+  it('loads and renders the budget comparison widget when enabled', async () => {
+    expenseService.getAlertStatuses.mockResolvedValueOnce([
+      {
+        id: 1,
+        category_id: 2,
+        category_name: 'Food',
+        category_icon: '🍔',
+        category_color: '#f97316',
+        month: 1,
+        year: 2026,
+        limit_amount: 200,
+        spent_amount: 120,
+        remaining_amount: 80,
+        status: 'ok',
+        is_over_limit: false,
+      },
+      {
+        id: 2,
+        category_id: null,
+        category_name: null,
+        category_icon: null,
+        category_color: null,
+        month: 1,
+        year: 2026,
+        limit_amount: 300,
+        spent_amount: 340,
+        remaining_amount: -40,
+        status: 'exceeded',
+        is_over_limit: true,
+      },
+    ])
+    const user = userEvent.setup()
+    renderPage()
+
+    expect(screen.queryByText(/real spending against monthly limits/i)).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /show budget comparison/i }))
+
+    await waitFor(() => {
+      expect(expenseService.getAlertStatuses).toHaveBeenCalledWith('tok', expect.objectContaining({
+        month: expect.any(Number),
+        year: expect.any(Number),
+      }))
+    })
+    expect(await screen.findByText('Food')).toBeInTheDocument()
+    expect(screen.getByText('Overall budget')).toBeInTheDocument()
+    expect(screen.getByText('OK')).toBeInTheDocument()
+    expect(screen.getByText('Exceeded')).toBeInTheDocument()
+  })
+
+  it('shows an empty state when the budget comparison returns no statuses', async () => {
+    expenseService.getAlertStatuses.mockResolvedValueOnce([])
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(screen.getByRole('button', { name: /show budget comparison/i }))
+
+    expect(await screen.findByText(/no monthly limits found/i)).toBeInTheDocument()
+  })
+
+  it('shows an inline error when the budget comparison request fails', async () => {
+    expenseService.getAlertStatuses.mockRejectedValueOnce(new Error('comparison unavailable'))
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(screen.getByRole('button', { name: /show budget comparison/i }))
+
+    expect(await screen.findByText('comparison unavailable')).toBeInTheDocument()
   })
 })

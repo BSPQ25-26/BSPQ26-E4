@@ -33,6 +33,7 @@ import {
   updateExpense,
   deleteExpense,
   getAlerts,
+  getAlertStatuses,
   dismissAlert,
   exportExpensesToCSV,
 } from "../services/expenseService";
@@ -187,6 +188,10 @@ export default function DashboardPage() {
   const [editCategorySubmitting, setEditCategorySubmitting] = useState(false);
 
   const [alerts, setAlerts] = useState([]);
+  const [showBudgetComparison, setShowBudgetComparison] = useState(false);
+  const [alertStatuses, setAlertStatuses] = useState([]);
+  const [loadingAlertStatuses, setLoadingAlertStatuses] = useState(false);
+  const [alertStatusError, setAlertStatusError] = useState("");
 
   const loadAlerts = useCallback(async () => {
     try {
@@ -196,6 +201,20 @@ export default function DashboardPage() {
       setAlerts([]);
     }
   }, [token]);
+
+  const loadAlertStatuses = useCallback(async () => {
+    setLoadingAlertStatuses(true);
+    setAlertStatusError("");
+    try {
+      const data = await getAlertStatuses(token, { month, year });
+      setAlertStatuses(data);
+    } catch (err) {
+      setAlertStatuses([]);
+      setAlertStatusError(err.message || "Budget comparison could not be loaded.");
+    } finally {
+      setLoadingAlertStatuses(false);
+    }
+  }, [token, month, year]);
 
   const [settingsFullName, setSettingsFullName] = useState("");
   const [settingsCurrency, setSettingsCurrency] = useState("");
@@ -307,6 +326,12 @@ export default function DashboardPage() {
     fetchSummary();
   }, [fetchSummary]);
 
+  useEffect(() => {
+    if (showBudgetComparison) {
+      loadAlertStatuses();
+    }
+  }, [showBudgetComparison, loadAlertStatuses]);
+
   /**
    * Sign the user out (both server-side and locally via the auth
    * context) and bounce back to the login page.
@@ -374,6 +399,7 @@ export default function DashboardPage() {
       setPaymentMethod("cash");
       await loadDashboardData();
       await fetchSummary();
+      if (showBudgetComparison) await loadAlertStatuses();
     } catch (err) {
       setFormError(err.message);
     } finally {
@@ -394,6 +420,7 @@ export default function DashboardPage() {
       await deleteExpense(token, id);
       await loadDashboardData();
       await fetchSummary();
+      if (showBudgetComparison) await loadAlertStatuses();
     } catch {
       // Best-effort: swallow network glitches so the UI stays responsive.
     }
@@ -450,6 +477,7 @@ export default function DashboardPage() {
       );
       await loadDashboardData();
       await fetchSummary();
+      if (showBudgetComparison) await loadAlertStatuses();
       closeEdit();
     } catch (err) {
       setEditError(err.message);
@@ -565,15 +593,12 @@ export default function DashboardPage() {
 
   // Compute Quick Stats from local expenses array
   const monthTotal = analytics.month_total;
-  const selectedRangeDays = startDate && endDate
-    ? Math.max(1, Math.round((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1)
-    : now.getDate();
-  const dailyAverage = monthTotal / selectedRangeDays;
 
   const monthLabel = startDate && endDate ? `${startDate} to ${endDate}` :
     startDate ? `From ${startDate}` :
     endDate ? `Until ${endDate}` :
     now.toLocaleString("en-US", { month: "long", year: "numeric" });
+  const formatMoney = (value) => `${Number(value || 0).toFixed(2)} ${user?.currency || "EUR"}`;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -679,30 +704,39 @@ export default function DashboardPage() {
             <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-gray-700">Quick Stats</h3>
-                <div className="flex gap-2">
-                  <select
-                    value={month}
-                    onChange={(e) => setMonth(parseInt(e.target.value, 10))}
-                    className="border border-gray-300 rounded-md text-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
+                <div className="flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowBudgetComparison((prev) => !prev)}
+                    className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
                   >
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map((itemMonth) => {
-                      const date = new Date(2000, itemMonth - 1, 1);
-                      return (
-                        <option key={itemMonth} value={itemMonth}>
-                          {date.toLocaleString("default", { month: "long" })}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <select
-                    value={year}
-                    onChange={(e) => setYear(parseInt(e.target.value, 10))}
-                    className="border border-gray-300 rounded-md text-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map((itemYear) => (
-                      <option key={itemYear} value={itemYear}>{itemYear}</option>
-                    ))}
-                  </select>
+                    {showBudgetComparison ? "Hide budget comparison" : "Show budget comparison"}
+                  </button>
+                  <div className="flex gap-2">
+                    <select
+                      value={month}
+                      onChange={(e) => setMonth(parseInt(e.target.value, 10))}
+                      className="border border-gray-300 rounded-md text-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((itemMonth) => {
+                        const date = new Date(2000, itemMonth - 1, 1);
+                        return (
+                          <option key={itemMonth} value={itemMonth}>
+                            {date.toLocaleString("default", { month: "long" })}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <select
+                      value={year}
+                      onChange={(e) => setYear(parseInt(e.target.value, 10))}
+                      className="border border-gray-300 rounded-md text-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map((itemYear) => (
+                        <option key={itemYear} value={itemYear}>{itemYear}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -720,6 +754,103 @@ export default function DashboardPage() {
                   </div>
                 </section>
               </div>
+
+              {showBudgetComparison && (
+                <section className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-800">Budget comparison</h3>
+                      <p className="text-xs text-gray-500">
+                        Real spending against monthly limits for {month}/{year}.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={loadAlertStatuses}
+                      disabled={loadingAlertStatuses}
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
+                    >
+                      {loadingAlertStatuses ? "Refreshing..." : "Refresh"}
+                    </button>
+                  </div>
+
+                  {loadingAlertStatuses ? (
+                    <p className="text-sm text-gray-400 text-center py-6">Loading budget comparison...</p>
+                  ) : alertStatusError ? (
+                    <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{alertStatusError}</p>
+                  ) : alertStatuses.length === 0 ? (
+                    <p className="text-sm text-gray-400 text-center py-6">
+                      No monthly limits found for this period.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                      {alertStatuses.map((status) => {
+                        const spent = Number(status.spent_amount || 0);
+                        const limit = Number(status.limit_amount || 0);
+                        const progress = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
+                        const accentColor = status.category_color || (status.is_over_limit ? "#DC2626" : "#059669");
+
+                        return (
+                          <article
+                            key={status.id}
+                            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <span
+                                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
+                                  style={{ backgroundColor: `${accentColor}1A`, color: accentColor }}
+                                >
+                                  {status.category_icon || "💰"}
+                                </span>
+                                <div className="min-w-0">
+                                  <h4 className="text-sm font-semibold text-gray-900 truncate">
+                                    {status.category_name || "Overall budget"}
+                                  </h4>
+                                  <p className="text-xs text-gray-500">
+                                    Limit {formatMoney(status.limit_amount)}
+                                  </p>
+                                </div>
+                              </div>
+                              <span className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                                status.is_over_limit
+                                  ? "bg-red-50 text-red-700"
+                                  : "bg-emerald-50 text-emerald-700"
+                              }`}>
+                                {status.is_over_limit ? "Exceeded" : "OK"}
+                              </span>
+                            </div>
+
+                            <div className="mt-4 h-2 overflow-hidden rounded-full bg-gray-100">
+                              <div
+                                className={status.is_over_limit ? "h-full bg-red-500" : "h-full bg-emerald-500"}
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+                              <div>
+                                <p className="text-gray-400">Spent</p>
+                                <p className="font-semibold text-gray-900">{formatMoney(status.spent_amount)}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-400">Remaining</p>
+                                <p className={status.remaining_amount < 0 ? "font-semibold text-red-600" : "font-semibold text-gray-900"}>
+                                  {formatMoney(status.remaining_amount)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-gray-400">Status</p>
+                                <p className="font-semibold text-gray-900">{status.status}</p>
+                              </div>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              )}
             </section>
 
             {/* Filters */}
