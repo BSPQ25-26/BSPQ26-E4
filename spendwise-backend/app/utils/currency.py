@@ -15,6 +15,10 @@ def get_exchange_rate(from_currency: str, to_currency: str) -> float:
     """Fetches and caches the exchange rate multiplier to save API calls."""
     if from_currency == to_currency:
         return 1.0
+    
+    if not API_KEY:
+        logger.warning("EXCHANGERATE_API_KEY is not set. Defaulting rate to 1.0")
+        return 1.0
         
     try:
         url = f"{BASE_URL}/{from_currency}/{to_currency}"
