@@ -325,7 +325,7 @@ describe('expenseService', () => {
   })
 
   describe('exportExpensesToCSV()', () => {
-    /** @type {{ href: string, setAttribute: ReturnType<typeof vi.fn>, click: ReturnType<typeof vi.fn> }} */
+    /** @type {{ href: string, setAttribute: Function, click: Function } | null} */
     let createdLink
 
     beforeEach(() => {
