@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpendWise — Technical Documentation</title>
+  <meta name="description" content="SpendWise Sprint 3 documentation hub: API reference, frontend reference, test coverage and downloadable manual." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --bg: #0b0d12;
+      --bg-elev: #11151c;
+      --bg-card: #161b25;
+      --border: #232a37;
+      --border-strong: #2f3848;
+      --text: #e7ecf3;
+      --text-muted: #9aa4b2;
+      --text-dim: #6b7385;
+      --accent: #7c5cff;
+      --accent-2: #5ae0c1;
+      --accent-3: #ffb86b;
+      --danger: #ff6b8a;
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background:
+        radial-gradient(1200px 600px at 90% -10%, rgba(124, 92, 255, 0.18), transparent 60%),
+        radial-gradient(900px 500px at -10% 10%, rgba(90, 224, 193, 0.10), transparent 60%),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 56px 24px 96px;
+    }
+
+    /* --- Header --- */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+      display: grid;
+      place-items: center;
+      color: #0b0d12;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-name {
+      font-size: 17px;
+    }
+
+    .brand-name span {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .meta {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .meta a {
+      color: var(--text-muted);
+      text-decoration: none;
+      border-bottom: 1px dashed var(--border-strong);
+      padding-bottom: 1px;
+      transition: color 0.15s;
+    }
+
+    .meta a:hover { color: var(--text); }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--bg-elev);
+    }
+
+    .pill::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-2);
+      box-shadow: 0 0 0 3px rgba(90, 224, 193, 0.18);
+    }
+
+    /* --- Hero --- */
+    .hero {
+      margin-bottom: 56px;
+    }
+
+    .hero h1 {
+      font-size: clamp(34px, 4.5vw, 52px);
+      line-height: 1.08;
+      letter-spacing: -0.025em;
+      margin: 0 0 18px;
+      font-weight: 700;
+    }
+
+    .hero h1 .accent {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero p {
+      max-width: 640px;
+      color: var(--text-muted);
+      font-size: 17px;
+      margin: 0 0 28px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: transform 0.08s, background 0.15s, border-color 0.15s;
+    }
+
+    .btn:active { transform: translateY(1px); }
+
+    .btn-primary {
+      background: var(--text);
+      color: var(--bg);
+    }
+
+    .btn-primary:hover { background: #ffffff; }
+
+    .btn-ghost {
+      background: var(--bg-elev);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover { border-color: var(--border-strong); background: var(--bg-card); }
+
+    /* --- Sections --- */
+    .section {
+      margin-bottom: 56px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .section-hint {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    /* --- Card grid --- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      position: relative;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 22px 20px;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: border-color 0.15s, transform 0.15s, background 0.15s;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: "→";
+      position: absolute;
+      top: 22px;
+      right: 22px;
+      font-size: 18px;
+      color: var(--text-dim);
+      transition: color 0.15s, transform 0.15s;
+    }
+
+    .card:hover {
+      border-color: var(--border-strong);
+      background: #1a2030;
+      transform: translateY(-2px);
+    }
+
+    .card:hover::after {
+      color: var(--text);
+      transform: translate(3px, -3px);
+    }
+
+    .card-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .card-tag .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .card.green .card-tag .dot { background: var(--accent-2); }
+    .card.orange .card-tag .dot { background: var(--accent-3); }
+    .card.pink .card-tag .dot { background: var(--danger); }
+
+    .card h3 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      padding-right: 28px;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .card-foot {
+      margin-top: auto;
+      display: flex;
+      gap: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      padding-top: 4px;
+    }
+
+    .card-foot .sep { color: var(--border-strong); }
+
+    /* --- Build info --- */
+    .build-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      padding: 20px 22px;
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .build-info dt {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin: 0 0 4px;
+    }
+
+    .build-info dd {
+      margin: 0;
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* --- Footer --- */
+    footer {
+      margin-top: 80px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+
+    footer a:hover { color: var(--text); }
+
+    .footer-links {
+      display: flex;
+      gap: 18px;
+    }
+
+    @media (max-width: 600px) {
+      .page { padding: 32px 18px 64px; }
+      .topbar { flex-direction: column; align-items: flex-start; }
+      .card { padding: 18px; }
+      .card::after { top: 18px; right: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">$</div>
+        <div class="brand-name">SpendWise <span>· docs</span></div>
+      </div>
+      <div class="meta">
+        <span class="pill">Sprint 3 · Release 3</span>
+        <a href="https://github.com/BSPQ25-26/BSPQ26-E4" target="_blank" rel="noopener">GitHub ↗</a>
+      </div>
+    </header>
+
+    <section class="hero">
+      <h1>Technical documentation,<br /><span class="accent">all in one place.</span></h1>
+      <p>
+        Auto-generated API reference, frontend component docs and test
+        coverage reports for the SpendWise personal-expense tracker.
+        Built from source on every push to <code>main</code>.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="backend/index.html">Open backend reference</a>
+        <a class="btn btn-ghost" href="backend-pdf/spendwisebackend.pdf">Download PDF manual</a>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">API &amp; Code Reference</h2>
+        <span class="section-hint">Generated from source</span>
+      </div>
+      <div class="grid">
+
+        <a class="card" href="backend/index.html">
+          <span class="card-tag"><span class="dot"></span>FastAPI · Python</span>
+          <h3>Backend reference</h3>
+          <p>HTTP routes, CRUD helpers, schemas and core utilities, rendered from the Google-style docstrings in the FastAPI service.</p>
+          <div class="card-foot">
+            <span>Sphinx</span><span class="sep">/</span><span>HTML</span>
+          </div>
+        </a>
+
+        <a class="card green" href="backend-pdf/spendwisebackend.pdf">
+          <span class="card-tag"><span class="dot"></span>FastAPI · Python</span>
+          <h3>Backend manual (PDF)</h3>
+          <p>Single-document version of the backend reference, generated through LaTeX. Useful for offline reading and Sprint review printouts.</p>
+          <div class="card-foot">
+            <span>Sphinx</span><span class="sep">/</span><span>LaTeX</span>
+          </div>
+        </a>
+
+        <a class="card orange" href="frontend/index.html">
+          <span class="card-tag"><span class="dot"></span>React · JSX</span>
+          <h3>Frontend reference</h3>
+          <p>Pages, components, hooks and services from the SpendWise React app, with prop types and module-level docstrings.</p>
+          <div class="card-foot">
+            <span>JSDoc 4</span><span class="sep">/</span><span>HTML</span>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">Test Reports</h2>
+        <span class="section-hint">From the latest CI run</span>
+      </div>
+      <div class="grid">
+
+        <a class="card pink" href="coverage/backend/index.html">
+          <span class="card-tag"><span class="dot"></span>pytest · coverage.py</span>
+          <h3>Backend coverage</h3>
+          <p>Line-by-line coverage report produced by <code>pytest --cov</code> against every service in the backend.</p>
+          <div class="card-foot">
+            <span>pytest</span><span class="sep">/</span><span>HTML</span>
+          </div>
+        </a>
+
+        <a class="card pink" href="coverage/frontend/index.html">
+          <span class="card-tag"><span class="dot"></span>vitest · v8</span>
+          <h3>Frontend coverage</h3>
+          <p>Coverage report from the Vitest suite, including the integration tests that exercise the backend from the client side.</p>
+          <div class="card-foot">
+            <span>vitest</span><span class="sep">/</span><span>HTML</span>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">Build</h2>
+        <span class="section-hint">This site</span>
+      </div>
+      <dl class="build-info">
+        <div>
+          <dt>Backend stack</dt>
+          <dd>FastAPI · Supabase</dd>
+        </div>
+        <div>
+          <dt>Frontend stack</dt>
+          <dd>React · Vite · Tailwind</dd>
+        </div>
+        <div>
+          <dt>Docs toolchain</dt>
+          <dd>Sphinx · JSDoc · LaTeX</dd>
+        </div>
+        <div>
+          <dt>Deployed via</dt>
+          <dd>GitHub Actions → Pages</dd>
+        </div>
+      </dl>
+    </section>
+
+    <footer>
+      <span>© 2026 SpendWise team — BSPQ26-E4 · Software Process &amp; Quality</span>
+      <div class="footer-links">
+        <a href="backend/index.html">Backend</a>
+        <a href="frontend/index.html">Frontend</a>
+        <a href="coverage/backend/index.html">Coverage</a>
+        <a href="https://github.com/BSPQ25-26/BSPQ26-E4" target="_blank" rel="noopener">Repository</a>
+      </div>
+    </footer>
+
+  </div>
+</body>
+</html>

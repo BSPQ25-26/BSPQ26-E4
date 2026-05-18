@@ -45,6 +45,9 @@ spendwise-front/docs/_build/
 # Vitest coverage report
 spendwise-front/coverage/
 
+# Unified documentation site (built locally + by CI, deployed to gh-pages)
+/site/
+
 # Logs
 *.log
 

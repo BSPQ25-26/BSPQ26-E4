@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+.pytest_cache/
+.coverage
+htmlcov/
+docs/_build/
+tests/performance_reports/
+profiling_snapshot.html

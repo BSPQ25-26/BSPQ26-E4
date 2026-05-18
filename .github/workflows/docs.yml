@@ -1,0 +1,98 @@
+name: Docs
+
+# Builds the unified SpendWise documentation site (backend Sphinx HTML +
+# PDF, frontend JSDoc, backend pytest coverage, frontend vitest coverage)
+# and deploys it to GitHub Pages.
+#
+# Triggers:
+#   - every push to main (auto-publish)
+#   - manual run from the Actions tab via workflow_dispatch (for re-runs)
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Only one Pages deploy at a time. Newer runs cancel queued ones so we
+# never publish an out-of-order site.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build unified docs site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: spendwise-backend/requirements.txt
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: spendwise-front/package-lock.json
+
+      # latexmk + the recommended/extra TeX Live bundles are what Sphinx
+      # needs to produce the PDF manual. tex-gyre ships tgtermes.sty,
+      # which the default Sphinx LaTeX layout requires.
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            latexmk \
+            tex-gyre \
+            texlive-latex-base \
+            texlive-latex-recommended \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            texlive-pictures \
+            texlive-plain-generic \
+            texlive-xetex
+
+      - name: Install backend dependencies
+        working-directory: spendwise-backend
+        run: pip install -r requirements.txt
+
+      - name: Install frontend dependencies
+        working-directory: spendwise-front
+        run: npm ci
+
+      - name: Build unified docs site
+        env:
+          # The build script runs pytest, which imports Supabase at import
+          # time. The placeholder values mirror what ci.yml already uses
+          # for the regular test job.
+          SUPABASE_URL: https://placeholder.supabase.co
+          SUPABASE_ANON_KEY: placeholder_anon_key
+          SUPABASE_SERVICE_KEY: placeholder_service_key
+        run: ./scripts/build-docs.sh
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

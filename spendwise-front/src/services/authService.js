@@ -10,13 +10,16 @@
  */
 
 /**
- * Base URL of the backend API. Currently hard-coded to localhost since
- * the project ships without an environment config layer for the
- * frontend; revisit when deploying to a non-local environment.
+ * Base URL of the backend API.
+ *
+ * In Docker the Vite build receives `VITE_API_BASE=/api/v1` as a
+ * build-arg, which nginx then proxies to the backend container.
+ * In local development the env var is unset so the fallback points
+ * directly to the uvicorn dev server.
  *
  * @type {string}
  */
-const API_BASE = "http://localhost:8080/api/v1";
+const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8080/api/v1";
 
 /**
  * @typedef {Object} RegisterResponse
