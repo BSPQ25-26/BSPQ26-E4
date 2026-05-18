@@ -76,6 +76,32 @@
       "range": "{{start}} to {{end}}",
       "from": "From {{start}}",
       "until": "Until {{end}}"
+    },
+    "export": {
+      "headerId": "ID",
+      "headerDate": "Date",
+      "headerAmount": "Amount",
+      "headerDescription": "Description",
+      "headerCategory": "Category",
+      "headerPaymentMethod": "Payment Method",
+      "sheetName": "Expenses"
+    },
+    "budgetComparison": {
+      "toggle": "Budget comparison",
+      "heading": "Budget comparison",
+      "subtitle": "Real spending against monthly limits for {{month}}/{{year}}.",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing…",
+      "loading": "Loading budget comparison…",
+      "loadError": "Budget comparison could not be loaded.",
+      "noLimits": "No monthly limits found for this period.",
+      "overallBudget": "Overall budget",
+      "limit": "Limit {{amount}}",
+      "exceeded": "Exceeded",
+      "ok": "OK",
+      "spent": "Spent",
+      "remaining": "Remaining",
+      "status": "Status"
     }
   },
   "expenses": {
@@ -181,6 +207,7 @@
     "deleteExpenseFailed": "Failed to delete expense",
     "fetchSummaryFailed": "Failed to fetch dashboard summary",
     "fetchAlertsFailed": "Failed to fetch alerts",
+    "fetchAlertStatusesFailed": "Failed to fetch budget comparison",
     "dismissAlertFailed": "Failed to dismiss alert"
   },
   "settings": {

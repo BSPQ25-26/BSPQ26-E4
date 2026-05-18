@@ -76,6 +76,32 @@
       "range": "{{start}}etik {{end}}era",
       "from": "{{start}}etik aurrera",
       "until": "{{end}}era arte"
+    },
+    "export": {
+      "headerId": "ID",
+      "headerDate": "Data",
+      "headerAmount": "Zenbatekoa",
+      "headerDescription": "Deskribapena",
+      "headerCategory": "Kategoria",
+      "headerPaymentMethod": "Ordainketa metodoa",
+      "sheetName": "Gastuak"
+    },
+    "budgetComparison": {
+      "toggle": "Aurrekontu konparaketa",
+      "heading": "Aurrekontu konparaketa",
+      "subtitle": "Benetako gastua hileko mugen aldean: {{month}}/{{year}}.",
+      "refresh": "Eguneratu",
+      "refreshing": "Eguneratzen…",
+      "loading": "Aurrekontu konparaketa kargatzen…",
+      "loadError": "Ezin izan da aurrekontu konparaketa kargatu.",
+      "noLimits": "Ez da aurkitu hileko mugarik aldi honetarako.",
+      "overallBudget": "Aurrekontu orokorra",
+      "limit": "Muga {{amount}}",
+      "exceeded": "Gaindituta",
+      "ok": "Ondo",
+      "spent": "Gastatua",
+      "remaining": "Geratzen dena",
+      "status": "Egoera"
     }
   },
   "expenses": {
@@ -181,6 +207,7 @@
     "deleteExpenseFailed": "Ezin izan da gastua ezabatu",
     "fetchSummaryFailed": "Ezin izan da laburpena kargatu",
     "fetchAlertsFailed": "Ezin izan dira alertak kargatu",
+    "fetchAlertStatusesFailed": "Ezin izan da aurrekontu konparaketa eskuratu",
     "dismissAlertFailed": "Ezin izan da alerta baztertu"
   },
   "settings": {

@@ -72,6 +72,32 @@
     "amountAxis": "Importe ({{currency}})",
     "amount": "Importe",
     "dayFallback": "Día {{day}}",
+    "export": {
+      "headerId": "ID",
+      "headerDate": "Fecha",
+      "headerAmount": "Importe",
+      "headerDescription": "Descripción",
+      "headerCategory": "Categoría",
+      "headerPaymentMethod": "Método de pago",
+      "sheetName": "Gastos"
+    },
+    "budgetComparison": {
+      "toggle": "Comparación de presupuesto",
+      "heading": "Comparación de presupuesto",
+      "subtitle": "Gasto real frente a los límites mensuales de {{month}}/{{year}}.",
+      "refresh": "Actualizar",
+      "refreshing": "Actualizando…",
+      "loading": "Cargando comparación de presupuesto…",
+      "loadError": "No se pudo cargar la comparación de presupuesto.",
+      "noLimits": "No se encontraron límites mensuales para este período.",
+      "overallBudget": "Presupuesto general",
+      "limit": "Límite {{amount}}",
+      "exceeded": "Excedido",
+      "ok": "OK",
+      "spent": "Gastado",
+      "remaining": "Restante",
+      "status": "Estado"
+    },
     "monthLabel": {
       "range": "{{start}} hasta {{end}}",
       "from": "Desde {{start}}",
@@ -181,6 +207,7 @@
     "deleteExpenseFailed": "No se pudo eliminar el gasto",
     "fetchSummaryFailed": "No se pudo cargar el resumen",
     "fetchAlertsFailed": "No se pudieron cargar las alertas",
+    "fetchAlertStatusesFailed": "No se pudo cargar la comparación de presupuesto",
     "dismissAlertFailed": "No se pudo descartar la alerta"
   },
   "settings": {

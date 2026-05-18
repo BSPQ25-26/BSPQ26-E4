@@ -366,6 +366,22 @@ export async function getDashboardSummary(token, { month, year } = {}) {
  */
 
 /**
+ * @typedef {Object} AlertStatus
+ * @property {number} id - Budget primary key.
+ * @property {number|null} category_id - Category the budget applies to, or `null` for an overall budget.
+ * @property {string|null} category_name - Category display name.
+ * @property {string|null} category_icon - Category icon.
+ * @property {string|null} category_color - Category colour.
+ * @property {number} month - Budget month.
+ * @property {number} year - Budget year.
+ * @property {number} limit_amount - User-defined monthly limit.
+ * @property {number} spent_amount - Real spending for the same period.
+ * @property {number} remaining_amount - Difference between limit and spending.
+ * @property {string} status - Backend status, e.g. `"ok"` or `"exceeded"`.
+ * @property {boolean} is_over_limit - Whether spending is above the limit.
+ */
+
+/**
  * Fetch all pending alerts for the authenticated user, newest first.
  *
  * @param {string} token - Bearer token.
@@ -378,6 +394,29 @@ export async function getAlerts(token) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || i18n.t("errors.fetchAlertsFailed"));
+  return data;
+}
+
+/**
+ * Fetch budget-vs-spending statuses for the authenticated user.
+ *
+ * @param {string} token - Bearer token.
+ * @param {Object} [filters] - Optional period filters. Defaults server-side to the current period.
+ * @param {number} [filters.month] - Month filter (1..12).
+ * @param {number} [filters.year] - Year filter.
+ * @returns {Promise<AlertStatus[]>}
+ * @throws {Error} If the backend errors out.
+ */
+export async function getAlertStatuses(token, { month, year } = {}) {
+  const params = new URLSearchParams();
+  if (month) params.set("month", month);
+  if (year) params.set("year", year);
+
+  const res = await fetch(`${API_BASE}/alerts/statuses?${params}`, {
+    headers: authHeaders(token),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.fetchAlertStatusesFailed"));
   return data;
 }
 
@@ -406,7 +445,14 @@ export function exportExpensesToCSV(expenses, filename = "spendwise-expenses.xls
   import("xlsx").then(({ utils, write }) => {
     /** Rows as plain JS arrays — SheetJS infers the cell type automatically. */
     const data = [
-      ["ID", "Date", "Amount", "Description", "Category", "Payment Method"],
+      [
+        i18n.t("dashboard.export.headerId"),
+        i18n.t("dashboard.export.headerDate"),
+        i18n.t("dashboard.export.headerAmount"),
+        i18n.t("dashboard.export.headerDescription"),
+        i18n.t("dashboard.export.headerCategory"),
+        i18n.t("dashboard.export.headerPaymentMethod"),
+      ],
       ...expenses.map((expense) => [
         expense.id ?? "",
         expense.expense_date ?? "",
@@ -419,7 +465,7 @@ export function exportExpensesToCSV(expenses, filename = "spendwise-expenses.xls
 
     const worksheet = utils.aoa_to_sheet(data);
     const workbook = utils.book_new();
-    utils.book_append_sheet(workbook, worksheet, "Expenses");
+    utils.book_append_sheet(workbook, worksheet, i18n.t("dashboard.export.sheetName"));
 
     const xlsxBuffer = write(workbook, { bookType: "xlsx", type: "array" });
     const blob = new Blob([xlsxBuffer], {

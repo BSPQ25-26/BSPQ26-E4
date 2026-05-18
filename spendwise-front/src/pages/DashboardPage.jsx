@@ -44,6 +44,7 @@ import {
   updateExpense,
   deleteExpense,
   getAlerts,
+  getAlertStatuses,
   dismissAlert,
   exportExpensesToCSV,
 } from "../services/expenseService";
@@ -186,6 +187,10 @@ export default function DashboardPage() {
   const [editCategorySubmitting, setEditCategorySubmitting] = useState(false);
 
   const [alerts, setAlerts] = useState([]);
+  const [showBudgetComparison, setShowBudgetComparison] = useState(false);
+  const [alertStatuses, setAlertStatuses] = useState([]);
+  const [loadingAlertStatuses, setLoadingAlertStatuses] = useState(false);
+  const [alertStatusError, setAlertStatusError] = useState("");
 
   const loadAlerts = useCallback(async () => {
     try {
@@ -195,6 +200,20 @@ export default function DashboardPage() {
       setAlerts([]);
     }
   }, [token]);
+
+  const loadAlertStatuses = useCallback(async () => {
+    setLoadingAlertStatuses(true);
+    setAlertStatusError("");
+    try {
+      const data = await getAlertStatuses(token, { month, year });
+      setAlertStatuses(data);
+    } catch (err) {
+      setAlertStatuses([]);
+      setAlertStatusError(err.message || t("dashboard.budgetComparison.loadError"));
+    } finally {
+      setLoadingAlertStatuses(false);
+    }
+  }, [token, month, year, t]);
 
   const [settingsFullName, setSettingsFullName] = useState("");
   const [settingsCurrency, setSettingsCurrency] = useState("");
@@ -306,6 +325,12 @@ export default function DashboardPage() {
     fetchSummary();
   }, [fetchSummary]);
 
+  useEffect(() => {
+    if (showBudgetComparison) {
+      loadAlertStatuses();
+    }
+  }, [showBudgetComparison, loadAlertStatuses]);
+
   async function handleDismissAlert(id) {
     try {
       await dismissAlert(token, id);
@@ -367,6 +392,7 @@ export default function DashboardPage() {
       setPaymentMethod("cash");
       await loadDashboardData();
       await fetchSummary();
+      if (showBudgetComparison) await loadAlertStatuses();
     } catch (err) {
       setFormError(err.message);
     } finally {
@@ -387,6 +413,7 @@ export default function DashboardPage() {
       await deleteExpense(token, id);
       await loadDashboardData();
       await fetchSummary();
+      if (showBudgetComparison) await loadAlertStatuses();
     } catch {
       // Best-effort: swallow network glitches so the UI stays responsive.
     }
@@ -439,6 +466,7 @@ export default function DashboardPage() {
       );
       await loadDashboardData();
       await fetchSummary();
+      if (showBudgetComparison) await loadAlertStatuses();
       closeEdit();
     } catch (err) {
       setEditError(err.message);
@@ -554,10 +582,6 @@ export default function DashboardPage() {
 
   // Compute Quick Stats from local expenses array.
   const monthTotal = analytics.month_total;
-  const selectedRangeDays = startDate && endDate
-    ? Math.max(1, Math.round((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1)
-    : now.getDate();
-  const dailyAverage = monthTotal / selectedRangeDays;
 
   // Human-friendly label for the active period. Uses the i18n month
   // name when no explicit range is set so the heading tracks the
@@ -572,6 +596,10 @@ export default function DashboardPage() {
         : now.toLocaleString(i18n.language, { month: "long", year: "numeric" });
 
   const currency = user?.currency || "EUR";
+
+  // Helper used by the budget comparison widget (introduced in main)
+  // to render money values with the user's selected currency.
+  const formatMoney = (value) => `${Number(value || 0).toFixed(2)} ${currency}`;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -678,30 +706,54 @@ export default function DashboardPage() {
             <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-gray-700">{t("dashboard.quickStats")}</h3>
-                <div className="flex gap-2">
-                  <select
-                    value={month}
-                    onChange={(e) => setMonth(parseInt(e.target.value, 10))}
-                    className="border border-gray-300 rounded-md text-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map((itemMonth) => {
-                      const date = new Date(2000, itemMonth - 1, 1);
-                      return (
-                        <option key={itemMonth} value={itemMonth}>
-                          {date.toLocaleString(i18n.language, { month: "long" })}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <select
-                    value={year}
-                    onChange={(e) => setYear(parseInt(e.target.value, 10))}
-                    className="border border-gray-300 rounded-md text-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map((itemYear) => (
-                      <option key={itemYear} value={itemYear}>{itemYear}</option>
-                    ))}
-                  </select>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-600">{t("dashboard.budgetComparison.toggle")}</span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={showBudgetComparison}
+                      aria-label={t("dashboard.budgetComparison.toggle")}
+                      onClick={() => setShowBudgetComparison((prev) => !prev)}
+                      className={`relative inline-flex h-10 w-20 shrink-0 items-center overflow-hidden border transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                        showBudgetComparison
+                          ? "border-emerald-400 bg-emerald-400"
+                          : "border-gray-300 bg-gray-200"
+                      }`}
+                      style={{ borderRadius: "9999px" }}
+                    >
+                      <span
+                        className={`inline-block h-9 w-9 transform rounded-full bg-white shadow-md transition-transform duration-200 ${
+                          showBudgetComparison ? "translate-x-10" : "translate-x-0.5"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={month}
+                      onChange={(e) => setMonth(parseInt(e.target.value, 10))}
+                      className="border border-gray-300 rounded-md text-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((itemMonth) => {
+                        const date = new Date(2000, itemMonth - 1, 1);
+                        return (
+                          <option key={itemMonth} value={itemMonth}>
+                            {date.toLocaleString(i18n.language, { month: "long" })}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <select
+                      value={year}
+                      onChange={(e) => setYear(parseInt(e.target.value, 10))}
+                      className="border border-gray-300 rounded-md text-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map((itemYear) => (
+                        <option key={itemYear} value={itemYear}>{itemYear}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -719,6 +771,103 @@ export default function DashboardPage() {
                   </div>
                 </section>
               </div>
+
+              {showBudgetComparison && (
+                <section className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-800">{t("dashboard.budgetComparison.heading")}</h3>
+                      <p className="text-xs text-gray-500">
+                        {t("dashboard.budgetComparison.subtitle", { month, year })}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={loadAlertStatuses}
+                      disabled={loadingAlertStatuses}
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
+                    >
+                      {loadingAlertStatuses ? t("dashboard.budgetComparison.refreshing") : t("dashboard.budgetComparison.refresh")}
+                    </button>
+                  </div>
+
+                  {loadingAlertStatuses ? (
+                    <p className="text-sm text-gray-400 text-center py-6">{t("dashboard.budgetComparison.loading")}</p>
+                  ) : alertStatusError ? (
+                    <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{alertStatusError}</p>
+                  ) : alertStatuses.length === 0 ? (
+                    <p className="text-sm text-gray-400 text-center py-6">
+                      {t("dashboard.budgetComparison.noLimits")}
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                      {alertStatuses.map((status) => {
+                        const spent = Number(status.spent_amount || 0);
+                        const limit = Number(status.limit_amount || 0);
+                        const progress = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
+                        const accentColor = status.category_color || (status.is_over_limit ? "#DC2626" : "#059669");
+
+                        return (
+                          <article
+                            key={status.id}
+                            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <span
+                                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
+                                  style={{ backgroundColor: `${accentColor}1A`, color: accentColor }}
+                                >
+                                  {status.category_icon || "💰"}
+                                </span>
+                                <div className="min-w-0">
+                                  <h4 className="text-sm font-semibold text-gray-900 truncate">
+                                    {status.category_name || t("dashboard.budgetComparison.overallBudget")}
+                                  </h4>
+                                  <p className="text-xs text-gray-500">
+                                    {t("dashboard.budgetComparison.limit", { amount: formatMoney(status.limit_amount) })}
+                                  </p>
+                                </div>
+                              </div>
+                              <span className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                                status.is_over_limit
+                                  ? "bg-red-50 text-red-700"
+                                  : "bg-emerald-50 text-emerald-700"
+                              }`}>
+                                {status.is_over_limit ? t("dashboard.budgetComparison.exceeded") : t("dashboard.budgetComparison.ok")}
+                              </span>
+                            </div>
+
+                            <div className="mt-4 h-2 overflow-hidden rounded-full bg-gray-100">
+                              <div
+                                className={status.is_over_limit ? "h-full bg-red-500" : "h-full bg-emerald-500"}
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+                              <div>
+                                <p className="text-gray-400">{t("dashboard.budgetComparison.spent")}</p>
+                                <p className="font-semibold text-gray-900">{formatMoney(status.spent_amount)}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-400">{t("dashboard.budgetComparison.remaining")}</p>
+                                <p className={status.remaining_amount < 0 ? "font-semibold text-red-600" : "font-semibold text-gray-900"}>
+                                  {formatMoney(status.remaining_amount)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-gray-400">{t("dashboard.budgetComparison.status")}</p>
+                                <p className="font-semibold text-gray-900">{status.status}</p>
+                              </div>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              )}
             </section>
 
             {/* Filters */}
