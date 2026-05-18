@@ -2,6 +2,14 @@
 
 SpendWise is a personal expense tracking application that helps you manage your finances. Track your daily expenses, categorize them, and visualize your spending patterns through interactive charts. Monitor your budget and gain insights into where your money goes each month.
 
+## Website (live demo)
+
+A hosted version of the frontend is online here:
+
+`https://<your-project>.vercel.app` *(← replace after the first Vercel deploy)*
+
+See [Deploy on Vercel](#deploy-on-vercel) below for the project settings, environment variable and optional `/api/` rewrite.
+
 ## Quick start (Docker)
 
 The whole stack is dockerised. One command brings up the backend
@@ -163,6 +171,56 @@ https://bspq25-26.github.io/BSPQ26-E4/
 
 > Enable Pages in **Settings → Pages → Source: GitHub Actions** if it
 > is not on yet.
+
+## Deploy on Vercel
+
+The frontend is set up to deploy on Vercel as a static SPA. The
+backend (FastAPI) is **not** part of the Vercel deploy — host it
+separately (Render, Railway, Fly, or a second Vercel project as
+serverless functions) and point the frontend at its public URL.
+
+### Project settings
+
+In Vercel **Settings → General**, configure:
+
+| Field            | Value              |
+| ---------------- | ------------------ |
+| Root directory   | `spendwise-front`  |
+| Framework preset | Vite               |
+| Build command    | `npm run build`    |
+| Output directory | `dist`             |
+| Install command  | `npm ci`           |
+
+### Environment variable
+
+In **Settings → Environment Variables**, add the public URL of the
+deployed backend so the compiled JS knows where to send API calls:
+
+```
+VITE_API_BASE = https://<your-backend-host>/api/v1
+```
+
+Vite inlines this value at build time, so any change requires a fresh
+deploy.
+
+### Optional — rewrite `/api/` at the edge
+
+If you would rather keep the frontend code calling the relative path
+`/api/...` (so the same codebase stays portable between the Docker
+setup and Vercel), drop a `vercel.json` at `spendwise-front/`:
+
+```json
+{
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://<your-backend-host>/api/:path*" }
+  ]
+}
+```
+
+This mirrors what `nginx.conf` does in Docker — the browser only ever
+talks to the Vercel domain, and Vercel proxies `/api/` to your real
+backend. With this in place you can leave `VITE_API_BASE` unset and
+the default `/api/v1` keeps working.
 
 ## Releases
 
