@@ -45,8 +45,12 @@ class ProfileUpdate(BaseModel):
         full_name: Display name shown across the application.
         currency: Preferred currency code (for example ``EUR`` or ``USD``).
         monthly_income: Self-reported monthly income used as a baseline for budget hints.
+        language: Preferred UI language code (``en``, ``es`` or ``eu``).
+            Persisted server-side so the choice follows the user across
+            devices; the frontend mirrors it into ``localStorage``.
     """
 
     full_name: Optional[str] = None
     currency: Optional[str] = None
     monthly_income: Optional[float] = None
+    language: Optional[str] = None

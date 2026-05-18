@@ -1,23 +1,34 @@
 /**
  * @file Dashboard page.
  *
- * Main authenticated screen of the application. Combines two tabs:
+ * Main authenticated screen of the application. Combines five tabs:
  *
  * - **Dashboard**: quick stats (total monthly spending and average
  *   daily costs), filter controls (category and date range) and two
  *   charts (pie by category, line by day).
  * - **Add Expense**: create form for new expenses plus a list of the
  *   filtered expenses with inline edit and delete actions.
+ * - **Manage Categories**: CRUD for the user's own categories plus
+ *   hide / restore of shared ones.
+ * - **Alerts**: pending budget alerts with a dismiss action.
+ * - **Settings**: profile editing (display name, currency, monthly
+ *   income, language).
  *
  * The page reads its data from the auth and expense service modules and
  * keeps everything in local component state — there is no global store.
+ * All user-visible strings flow through `react-i18next`; date and month
+ * formatting follow `i18n.language` so the entire UI tracks the active
+ * locale.
  *
  * @module pages/DashboardPage
  */
 
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+
 import { useAuth } from "../context/AuthContext";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 import {
   getCategories,
   getHiddenCategories,
@@ -48,8 +59,9 @@ import {
 } from "recharts";
 
 /**
- * Payment methods accepted by the form. Kept in sync with the backend's
- * default `payment_method` values.
+ * Payment methods accepted by the form. Kept as raw API values; the
+ * UI looks up a translated label for each one through
+ * `t("expenses.paymentMethods.<value>")`.
  *
  * @type {string[]}
  */
@@ -66,28 +78,28 @@ const CHART_COLORS = [
 ];
 
 /**
- * Predefined icons available for categories so users do not need to
- * type emojis manually from the keyboard.
+ * Predefined icons available for categories. Each entry pairs the emoji
+ * with the i18n key that resolves to its translated label.
  *
- * @type {Array<{value: string, label: string}>}
+ * @type {Array<{value: string, labelKey: string}>}
  */
 const CATEGORY_ICONS = [
-  { value: "🏷️", label: "Generic" },
-  { value: "🍔", label: "Food" },
-  { value: "🛒", label: "Groceries" },
-  { value: "🏠", label: "Home" },
-  { value: "🚗", label: "Transport" },
-  { value: "⛽", label: "Fuel" },
-  { value: "💡", label: "Bills" },
-  { value: "🎬", label: "Entertainment" },
-  { value: "🩺", label: "Health" },
-  { value: "✈️", label: "Travel" },
-  { value: "🎓", label: "Education" },
-  { value: "🐶", label: "Pets" },
-  { value: "🎁", label: "Gifts" },
-  { value: "👕", label: "Clothes" },
-  { value: "💼", label: "Work" },
-  { value: "💳", label: "Other" },
+  { value: "🏷️", labelKey: "categories.icons.Generic" },
+  { value: "🍔", labelKey: "categories.icons.Food" },
+  { value: "🛒", labelKey: "categories.icons.Groceries" },
+  { value: "🏠", labelKey: "categories.icons.Home" },
+  { value: "🚗", labelKey: "categories.icons.Transport" },
+  { value: "⛽", labelKey: "categories.icons.Fuel" },
+  { value: "💡", labelKey: "categories.icons.Bills" },
+  { value: "🎬", labelKey: "categories.icons.Entertainment" },
+  { value: "🩺", labelKey: "categories.icons.Health" },
+  { value: "✈️", labelKey: "categories.icons.Travel" },
+  { value: "🎓", labelKey: "categories.icons.Education" },
+  { value: "🐶", labelKey: "categories.icons.Pets" },
+  { value: "🎁", labelKey: "categories.icons.Gifts" },
+  { value: "👕", labelKey: "categories.icons.Clothes" },
+  { value: "💼", labelKey: "categories.icons.Work" },
+  { value: "💳", labelKey: "categories.icons.Other" },
 ];
 
 /**
@@ -114,27 +126,14 @@ const emptyAnalytics = {
 /**
  * Dashboard page component.
  *
- * Owns a fairly large amount of local state because it powers both the
- * stats panel and the create / edit / delete flow for expenses:
- *
- * - **Filters**: month/year for the summary, plus category and date
- *   range for the expense list and analytics.
- * - **Async data**: categories, expenses, analytics and summary, each
- *   with its own loading flag and error fallback.
- * - **Forms**: separate state for the inline "Add expense" form and for
- *   the modal "Edit expense" form, including submission flags.
- * - **UI**: which tab is active (`dashboard` vs `add-expense`).
- *
- * Side effects:
- *
- * - Fetches categories once on mount.
- * - Re-fetches expenses + analytics whenever any filter changes.
- * - Re-fetches the summary whenever the month or year changes.
- * - Calls the auth context's `logout` and navigates back to `/login`.
+ * Owns a fairly large amount of local state because it powers the
+ * stats panel, the create / edit / delete flow for expenses, and the
+ * category management screen.
  *
  * @returns {JSX.Element}
  */
 export default function DashboardPage() {
+  const { t, i18n } = useTranslation();
   const { user, token, logout, updateUser } = useAuth();
   const navigate = useNavigate();
 
@@ -210,11 +209,11 @@ export default function DashboardPage() {
       setAlertStatuses(data);
     } catch (err) {
       setAlertStatuses([]);
-      setAlertStatusError(err.message || "Budget comparison could not be loaded.");
+      setAlertStatusError(err.message || t("dashboard.budgetComparison.loadError"));
     } finally {
       setLoadingAlertStatuses(false);
     }
-  }, [token, month, year]);
+  }, [token, month, year, t]);
 
   const [settingsFullName, setSettingsFullName] = useState("");
   const [settingsCurrency, setSettingsCurrency] = useState("");
@@ -278,11 +277,11 @@ export default function DashboardPage() {
     }
 
     if (expensesResult.status === "rejected" || analyticsResult.status === "rejected") {
-      setDashboardError("Some dashboard data could not be loaded.");
+      setDashboardError(t("dashboard.error"));
     }
 
     setLoadingExpenses(false);
-  }, [token, month, year, selectedCategory, startDate, endDate, user?.currency]);
+  }, [token, month, year, selectedCategory, startDate, endDate, t, user?.currency]);
 
   /**
    * Fetch the monthly summary (total + daily average) for the currently
@@ -332,12 +331,6 @@ export default function DashboardPage() {
     }
   }, [showBudgetComparison, loadAlertStatuses]);
 
-  /**
-   * Sign the user out (both server-side and locally via the auth
-   * context) and bounce back to the login page.
-   *
-   * @returns {Promise<void>}
-   */
   async function handleDismissAlert(id) {
     try {
       await dismissAlert(token, id);
@@ -452,11 +445,7 @@ export default function DashboardPage() {
   }
 
   /**
-   * Submit handler for the "Edit expense" form. Sends the patched
-   * fields to the backend, applies the response into the local
-   * `expenses` array (so the list updates instantly even before the
-   * full refetch resolves), then refreshes the dashboard and closes
-   * the modal.
+   * Submit handler for the "Edit expense" form.
    *
    * @param {Event} e
    * @returns {Promise<void>}
@@ -593,27 +582,40 @@ export default function DashboardPage() {
     exportExpensesToCSV(expenses, `spendwise-expenses-${periodLabel}.xlsx`);
   }
 
-  // Compute Quick Stats from local expenses array
+  // Compute Quick Stats from local expenses array.
   const monthTotal = analytics.month_total;
 
-  const monthLabel = startDate && endDate ? `${startDate} to ${endDate}` :
-    startDate ? `From ${startDate}` :
-    endDate ? `Until ${endDate}` :
-    now.toLocaleString("en-US", { month: "long", year: "numeric" });
-  const formatMoney = (value) => `${Number(value || 0).toFixed(2)} ${user?.currency || "EUR"}`;
+  // Human-friendly label for the active period. Uses the i18n month
+  // name when no explicit range is set so the heading tracks the
+  // current locale (English → "May 2026", Spanish → "mayo de 2026",
+  // Basque → "2026 maiatza", etc.).
+  const monthLabel = startDate && endDate
+    ? t("dashboard.monthLabel.range", { start: startDate, end: endDate })
+    : startDate
+      ? t("dashboard.monthLabel.from", { start: startDate })
+      : endDate
+        ? t("dashboard.monthLabel.until", { end: endDate })
+        : now.toLocaleString(i18n.language, { month: "long", year: "numeric" });
+
+  const currency = user?.currency || "EUR";
+
+  // Helper used by the budget comparison widget (introduced in main)
+  // to render money values with the user's selected currency.
+  const formatMoney = (value) => `${Number(value || 0).toFixed(2)} ${currency}`;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-        <span className="text-base font-bold text-gray-900">SpendWise</span>
+        <span className="text-base font-bold text-gray-900">{t("common.appName")}</span>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-500 hidden sm:block">
             {user?.email}
           </span>
+          <LanguageSwitcher />
           <button
             onClick={() => setActiveTab("alerts")}
             className="relative text-gray-400 hover:text-indigo-600 transition-colors"
-            aria-label="Alerts"
+            aria-label={t("nav.alertsAria")}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
               <path d="M10 2a6 6 0 00-6 6v2.586l-.707.707A1 1 0 004 13h12a1 1 0 00.707-1.707L16 10.586V8a6 6 0 00-6-6zm0 16a2 2 0 01-2-2h4a2 2 0 01-2 2z" />
@@ -628,7 +630,7 @@ export default function DashboardPage() {
             onClick={handleLogout}
             className="text-sm text-gray-400 hover:text-red-500 transition-colors"
           >
-            Sign out
+            {t("nav.signOut")}
           </button>
         </div>
       </nav>
@@ -643,7 +645,7 @@ export default function DashboardPage() {
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
-            Dashboard
+            {t("nav.dashboard")}
           </button>
           <button
             onClick={() => setActiveTab("add-expense")}
@@ -653,7 +655,7 @@ export default function DashboardPage() {
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
-            Add Expense
+            {t("nav.addExpense")}
           </button>
           <button
             onClick={() => setActiveTab("manage-categories")}
@@ -663,7 +665,7 @@ export default function DashboardPage() {
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
-            Manage Categories
+            {t("nav.manageCategories")}
           </button>
           <button
             onClick={() => setActiveTab("alerts")}
@@ -673,7 +675,7 @@ export default function DashboardPage() {
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
-            Alerts
+            {t("nav.alerts")}
             {alerts.length > 0 && (
               <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
                 {alerts.length > 9 ? "9+" : alerts.length}
@@ -688,7 +690,7 @@ export default function DashboardPage() {
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
-            Settings
+            {t("nav.settings")}
           </button>
         </nav>
       </div>
@@ -705,15 +707,15 @@ export default function DashboardPage() {
             {/* Backend Summary */}
             <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-700">Quick Stats</h3>
+                <h3 className="text-sm font-semibold text-gray-700">{t("dashboard.quickStats")}</h3>
                 <div className="flex flex-wrap justify-end gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-600">Budget comparison</span>
+                    <span className="text-sm font-medium text-gray-600">{t("dashboard.budgetComparison.toggle")}</span>
                     <button
                       type="button"
                       role="switch"
                       aria-checked={showBudgetComparison}
-                      aria-label="Budget comparison"
+                      aria-label={t("dashboard.budgetComparison.toggle")}
                       onClick={() => setShowBudgetComparison((prev) => !prev)}
                       className={`relative inline-flex h-10 w-20 shrink-0 items-center overflow-hidden border transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
                         showBudgetComparison
@@ -739,7 +741,7 @@ export default function DashboardPage() {
                         const date = new Date(2000, itemMonth - 1, 1);
                         return (
                           <option key={itemMonth} value={itemMonth}>
-                            {date.toLocaleString("default", { month: "long" })}
+                            {date.toLocaleString(i18n.language, { month: "long" })}
                           </option>
                         );
                       })}
@@ -759,15 +761,15 @@ export default function DashboardPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <section className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">Total Monthly Spending</h3>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">{t("dashboard.totalMonthly")}</h3>
                   <div className="text-2xl font-bold text-indigo-600">
-                    {loadingSummary ? "..." : `${summaryData?.total_monthly_spending?.toFixed(2) || "0.00"} ${user?.currency || "EUR"}`}
+                    {loadingSummary ? "..." : `${summaryData?.total_monthly_spending?.toFixed(2) || "0.00"} ${currency}`}
                   </div>
                 </section>
                 <section className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">Average Daily Costs</h3>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">{t("dashboard.averageDaily")}</h3>
                   <div className="text-2xl font-bold text-emerald-600">
-                    {loadingSummary ? "..." : `${summaryData?.average_daily_costs?.toFixed(2) || "0.00"} ${user?.currency || "EUR"}`}
+                    {loadingSummary ? "..." : `${summaryData?.average_daily_costs?.toFixed(2) || "0.00"} ${currency}`}
                   </div>
                 </section>
               </div>
@@ -776,9 +778,9 @@ export default function DashboardPage() {
                 <section className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-800">Budget comparison</h3>
+                      <h3 className="text-sm font-semibold text-gray-800">{t("dashboard.budgetComparison.heading")}</h3>
                       <p className="text-xs text-gray-500">
-                        Real spending against monthly limits for {month}/{year}.
+                        {t("dashboard.budgetComparison.subtitle", { month, year })}
                       </p>
                     </div>
                     <button
@@ -787,17 +789,17 @@ export default function DashboardPage() {
                       disabled={loadingAlertStatuses}
                       className="text-xs font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
                     >
-                      {loadingAlertStatuses ? "Refreshing..." : "Refresh"}
+                      {loadingAlertStatuses ? t("dashboard.budgetComparison.refreshing") : t("dashboard.budgetComparison.refresh")}
                     </button>
                   </div>
 
                   {loadingAlertStatuses ? (
-                    <p className="text-sm text-gray-400 text-center py-6">Loading budget comparison...</p>
+                    <p className="text-sm text-gray-400 text-center py-6">{t("dashboard.budgetComparison.loading")}</p>
                   ) : alertStatusError ? (
                     <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{alertStatusError}</p>
                   ) : alertStatuses.length === 0 ? (
                     <p className="text-sm text-gray-400 text-center py-6">
-                      No monthly limits found for this period.
+                      {t("dashboard.budgetComparison.noLimits")}
                     </p>
                   ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -822,10 +824,10 @@ export default function DashboardPage() {
                                 </span>
                                 <div className="min-w-0">
                                   <h4 className="text-sm font-semibold text-gray-900 truncate">
-                                    {status.category_name || "Overall budget"}
+                                    {status.category_name || t("dashboard.budgetComparison.overallBudget")}
                                   </h4>
                                   <p className="text-xs text-gray-500">
-                                    Limit {formatMoney(status.limit_amount)}
+                                    {t("dashboard.budgetComparison.limit", { amount: formatMoney(status.limit_amount) })}
                                   </p>
                                 </div>
                               </div>
@@ -834,7 +836,7 @@ export default function DashboardPage() {
                                   ? "bg-red-50 text-red-700"
                                   : "bg-emerald-50 text-emerald-700"
                               }`}>
-                                {status.is_over_limit ? "Exceeded" : "OK"}
+                                {status.is_over_limit ? t("dashboard.budgetComparison.exceeded") : t("dashboard.budgetComparison.ok")}
                               </span>
                             </div>
 
@@ -847,17 +849,17 @@ export default function DashboardPage() {
 
                             <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
                               <div>
-                                <p className="text-gray-400">Spent</p>
+                                <p className="text-gray-400">{t("dashboard.budgetComparison.spent")}</p>
                                 <p className="font-semibold text-gray-900">{formatMoney(status.spent_amount)}</p>
                               </div>
                               <div>
-                                <p className="text-gray-400">Remaining</p>
+                                <p className="text-gray-400">{t("dashboard.budgetComparison.remaining")}</p>
                                 <p className={status.remaining_amount < 0 ? "font-semibold text-red-600" : "font-semibold text-gray-900"}>
                                   {formatMoney(status.remaining_amount)}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-gray-400">Status</p>
+                                <p className="text-gray-400">{t("dashboard.budgetComparison.status")}</p>
                                 <p className="font-semibold text-gray-900">{status.status}</p>
                               </div>
                             </div>
@@ -873,19 +875,19 @@ export default function DashboardPage() {
             {/* Filters */}
             <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-gray-900">Filters</h3>
+                <h3 className="text-base font-semibold text-gray-900">{t("dashboard.filters")}</h3>
                 <div className="flex items-center gap-3">
                   <button
                     id="download-csv-btn"
                     onClick={handleExportCSV}
                     disabled={expenses.length === 0}
-                    title={expenses.length === 0 ? "No expenses to export" : "Download expenses as CSV"}
+                    title={expenses.length === 0 ? t("dashboard.downloadCsvDisabled") : t("dashboard.downloadCsvHint")}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                       <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
-                    Download CSV
+                    {t("dashboard.downloadCsv")}
                   </button>
                   <button
                     onClick={() => {
@@ -895,19 +897,19 @@ export default function DashboardPage() {
                     }}
                     className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                   >
-                    Clear Filters
+                    {t("dashboard.clearFilters")}
                   </button>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t("dashboard.category")}</label>
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                   >
-                    <option value="">All Categories</option>
+                    <option value="">{t("dashboard.allCategories")}</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.icon} {c.name}
@@ -916,7 +918,7 @@ export default function DashboardPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t("dashboard.startDate")}</label>
                   <input
                     type="date"
                     value={startDate}
@@ -925,7 +927,7 @@ export default function DashboardPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">End Date</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t("dashboard.endDate")}</label>
                   <input
                     type="date"
                     value={endDate}
@@ -938,19 +940,19 @@ export default function DashboardPage() {
 
             {loadingExpenses ? (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12">
-                <p className="text-sm text-gray-400 text-center">Loading charts...</p>
+                <p className="text-sm text-gray-400 text-center">{t("dashboard.loadingCharts")}</p>
               </div>
             ) : expenses.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12">
                 <p className="text-sm text-gray-400 text-center">
-                  No expenses yet. Add your first expense to see charts.
+                  {t("dashboard.noExpenses")}
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
                   <h3 className="text-base font-semibold text-gray-900 mb-4">
-                    Expenses by Category
+                    {t("dashboard.expensesByCategory")}
                   </h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
@@ -972,7 +974,7 @@ export default function DashboardPage() {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value) => `${value.toFixed(2)} ${user?.currency || "EUR"}`}
+                        formatter={(value) => `${value.toFixed(2)} ${currency}`}
                       />
                       <Legend />
                     </PieChart>
@@ -981,29 +983,29 @@ export default function DashboardPage() {
 
                 <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
                   <h3 className="text-base font-semibold text-gray-900 mb-4">
-                    Daily Expenses - {monthLabel}
+                    {t("dashboard.dailyExpenses", { label: monthLabel })}
                   </h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={dailyData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                       <XAxis
                         dataKey="day"
-                        label={{ value: "Day of Month", position: "insideBottom", offset: -5 }}
+                        label={{ value: t("dashboard.dayOfMonth"), position: "insideBottom", offset: -5 }}
                         tick={{ fontSize: 12 }}
                       />
                       <YAxis
                         label={{
-                          value: `Amount (${user?.currency || "EUR"})`,
+                          value: t("dashboard.amountAxis", { currency }),
                           angle: -90,
                           position: "insideLeft"
                         }}
                         tick={{ fontSize: 12 }}
                       />
                       <Tooltip
-                        labelFormatter={(day, payload) => payload?.[0]?.payload?.date || `Day ${day}`}
+                        labelFormatter={(day, payload) => payload?.[0]?.payload?.date || t("dashboard.dayFallback", { day })}
                         formatter={(value) => [
-                          `${value.toFixed(2)} ${user?.currency || "EUR"}`,
-                          "Amount"
+                          `${value.toFixed(2)} ${currency}`,
+                          t("dashboard.amount")
                         ]}
                       />
                       <Line
@@ -1025,20 +1027,20 @@ export default function DashboardPage() {
         {activeTab === "add-expense" && (
           <div className="max-w-2xl mx-auto space-y-6">
             <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-              <h2 className="text-base font-semibold text-gray-900 mb-5">Add expense</h2>
+              <h2 className="text-base font-semibold text-gray-900 mb-5">{t("expenses.add")}</h2>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Amount <span className="text-red-400">*</span>
+                      {t("expenses.amount")} <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       min="0.01"
                       required
-                      placeholder="0.00"
+                      placeholder={t("expenses.amountPlaceholder")}
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -1046,7 +1048,7 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Date <span className="text-red-400">*</span>
+                      {t("expenses.date")} <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="date"
@@ -1060,13 +1062,13 @@ export default function DashboardPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t("expenses.category")}</label>
                     <select
                       value={categoryId}
                       onChange={(e) => setCategoryId(e.target.value)}
                       className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                     >
-                      <option value="">— none —</option>
+                      <option value="">{t("common.none")}</option>
                       {categories.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.icon} {c.name}
@@ -1075,24 +1077,24 @@ export default function DashboardPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Payment</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t("expenses.payment")}</label>
                     <select
                       value={paymentMethod}
                       onChange={(e) => setPaymentMethod(e.target.value)}
                       className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                     >
                       {PAYMENT_METHODS.map((m) => (
-                        <option key={m} value={m}>{m}</option>
+                        <option key={m} value={m}>{t(`expenses.paymentMethods.${m}`)}</option>
                       ))}
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t("expenses.description")}</label>
                   <input
                     type="text"
-                    placeholder="e.g. Lunch, Groceries…"
+                    placeholder={t("expenses.descriptionPlaceholder")}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -1108,7 +1110,7 @@ export default function DashboardPage() {
                   disabled={submitting}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
                 >
-                  {submitting ? "Adding…" : "Add expense"}
+                  {submitting ? t("expenses.submitting") : t("expenses.submit")}
                 </button>
               </form>
             </section>
@@ -1117,14 +1119,14 @@ export default function DashboardPage() {
               <div className="flex items-baseline justify-between mb-5">
                 <h2 className="text-base font-semibold text-gray-900 capitalize">{monthLabel}</h2>
                 <span className="text-sm font-semibold text-indigo-600">
-                  {monthTotal.toFixed(2)} {user?.currency || "EUR"}
+                  {monthTotal.toFixed(2)} {currency}
                 </span>
               </div>
 
               {loadingExpenses ? (
-                <p className="text-sm text-gray-400 text-center py-6">Loading…</p>
+                <p className="text-sm text-gray-400 text-center py-6">{t("common.loadingShort")}</p>
               ) : expenses.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-6">No expenses this month yet.</p>
+                <p className="text-sm text-gray-400 text-center py-6">{t("expenses.emptyMonth")}</p>
               ) : (
                 <ul className="divide-y divide-gray-100">
                   {expenses.map((expense) => (
@@ -1135,10 +1137,10 @@ export default function DashboardPage() {
                         </span>
                         <div className="min-w-0">
                           <p className="text-sm text-gray-800 truncate">
-                            {expense.description || expense.categories?.name || "Expense"}
+                            {expense.description || expense.categories?.name || t("expenses.defaultName")}
                           </p>
                           <p className="text-xs text-gray-400">
-                            {expense.expense_date} · {expense.payment_method}
+                            {expense.expense_date} · {expense.payment_method ? t(`expenses.paymentMethods.${expense.payment_method}`, { defaultValue: expense.payment_method }) : ""}
                           </p>
                         </div>
                       </div>
@@ -1149,7 +1151,7 @@ export default function DashboardPage() {
                         <button
                           onClick={() => openEdit(expense)}
                           className="text-gray-300 hover:text-indigo-500 transition-colors"
-                          aria-label="Edit"
+                          aria-label={t("expenses.editAria")}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
@@ -1158,7 +1160,7 @@ export default function DashboardPage() {
                         <button
                           onClick={() => handleDelete(expense.id)}
                           className="text-gray-300 hover:text-red-500 transition-colors text-lg leading-none"
-                          aria-label="Delete"
+                          aria-label={t("expenses.deleteAria")}
                         >
                           ×
                         </button>
@@ -1175,14 +1177,14 @@ export default function DashboardPage() {
           <div className="max-w-2xl mx-auto">
             <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-semibold text-gray-900">Alerts</h2>
-                <span className="text-sm text-gray-500">{alerts.length} pending</span>
+                <h2 className="text-base font-semibold text-gray-900">{t("alerts.title")}</h2>
+                <span className="text-sm text-gray-500">{t("alerts.pending", { count: alerts.length })}</span>
               </div>
 
               {alerts.length === 0 ? (
                 <div className="py-12 text-center">
                   <p className="text-2xl mb-2">✅</p>
-                  <p className="text-sm text-gray-400">No pending alerts. You are within all your budgets.</p>
+                  <p className="text-sm text-gray-400">{t("alerts.empty")}</p>
                 </div>
               ) : (
                 <ul className="divide-y divide-gray-100">
@@ -1196,20 +1198,29 @@ export default function DashboardPage() {
                         </span>
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-gray-800">
-                            Budget exceeded
+                            {t("alerts.budgetExceeded")}
                             {alert.budgets && (
                               <span className="font-normal text-gray-500">
-                                {" "}— limit {parseFloat(alert.budgets.amount).toFixed(2)} {user?.currency || "EUR"} ({alert.budgets.month}/{alert.budgets.year})
+                                {t("alerts.limit", {
+                                  amount: parseFloat(alert.budgets.amount).toFixed(2),
+                                  currency,
+                                  month: alert.budgets.month,
+                                  year: alert.budgets.year,
+                                })}
                               </span>
                             )}
                           </p>
                           {alert.expenses && (
                             <p className="text-xs text-gray-500 mt-0.5">
-                              Triggered by: {alert.expenses.description || "expense"} · {parseFloat(alert.expenses.amount).toFixed(2)} {user?.currency || "EUR"}
+                              {t("alerts.triggeredBy", {
+                                name: alert.expenses.description || t("alerts.expenseFallback"),
+                                amount: parseFloat(alert.expenses.amount).toFixed(2),
+                                currency,
+                              })}
                             </p>
                           )}
                           <p className="text-xs text-gray-400 mt-0.5">
-                            {new Date(alert.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
+                            {new Date(alert.created_at).toLocaleDateString(i18n.language, { day: "numeric", month: "short", year: "numeric" })}
                           </p>
                         </div>
                       </div>
@@ -1217,7 +1228,7 @@ export default function DashboardPage() {
                         onClick={() => handleDismissAlert(alert.id)}
                         className="shrink-0 text-xs text-gray-400 hover:text-red-500 border border-gray-200 hover:border-red-200 rounded-lg px-3 py-1.5 transition-colors"
                       >
-                        Dismiss
+                        {t("alerts.dismiss")}
                       </button>
                     </li>
                   ))}
@@ -1230,12 +1241,12 @@ export default function DashboardPage() {
         {activeTab === "settings" && (
           <div className="max-w-lg mx-auto">
             <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-              <h2 className="text-base font-semibold text-gray-900 mb-1">Profile & Preferences</h2>
-              <p className="text-sm text-gray-500 mb-6">Changes are saved immediately to your account.</p>
+              <h2 className="text-base font-semibold text-gray-900 mb-1">{t("settings.title")}</h2>
+              <p className="text-sm text-gray-500 mb-6">{t("settings.subtitle")}</p>
 
               <form onSubmit={handleSettingsSubmit} className="space-y-5">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t("settings.email")}</label>
                   <input
                     type="text"
                     disabled
@@ -1245,10 +1256,10 @@ export default function DashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Display Name</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t("settings.displayName")}</label>
                   <input
                     type="text"
-                    placeholder="Your name"
+                    placeholder={t("settings.displayNamePlaceholder")}
                     value={settingsFullName}
                     onChange={(e) => { setSettingsFullName(e.target.value); setSettingsSuccess(false); }}
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -1256,7 +1267,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Currency</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t("settings.currency")}</label>
                   <select
                     value={settingsCurrency}
                     onChange={(e) => { setSettingsCurrency(e.target.value); setSettingsSuccess(false); }}
@@ -1269,23 +1280,28 @@ export default function DashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Monthly Income (optional)</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t("settings.income")}</label>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
-                    placeholder="0.00"
+                    placeholder={t("settings.incomePlaceholder")}
                     value={settingsIncome}
                     onChange={(e) => { setSettingsIncome(e.target.value); setSettingsSuccess(false); }}
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
 
+                {/* Language preference lives next to the rest of the
+                    profile fields so a logged-in user can sync it to
+                    their account without leaving Settings. */}
+                <LanguageSwitcher variant="full" />
+
                 {settingsError && (
                   <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{settingsError}</p>
                 )}
                 {settingsSuccess && (
-                  <p className="text-sm text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg">Profile updated successfully.</p>
+                  <p className="text-sm text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg">{t("settings.success")}</p>
                 )}
 
                 <button
@@ -1293,7 +1309,7 @@ export default function DashboardPage() {
                   disabled={settingsSubmitting}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
                 >
-                  {settingsSubmitting ? "Saving…" : "Save changes"}
+                  {settingsSubmitting ? t("settings.saving") : t("settings.save")}
                 </button>
               </form>
             </section>
@@ -1303,12 +1319,12 @@ export default function DashboardPage() {
         {activeTab === "manage-categories" && (
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)] gap-6">
             <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-              <h2 className="text-base font-semibold text-gray-900 mb-5">Create category</h2>
+              <h2 className="text-base font-semibold text-gray-900 mb-5">{t("categories.createTitle")}</h2>
 
               <form onSubmit={handleCategorySubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Name <span className="text-red-400">*</span>
+                    {t("categories.name")} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
@@ -1316,13 +1332,13 @@ export default function DashboardPage() {
                     value={categoryName}
                     onChange={(e) => setCategoryName(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="Groceries"
+                    placeholder={t("categories.namePlaceholder")}
                   />
                 </div>
 
                 <div className="grid grid-cols-[140px_minmax(0,1fr)] gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Icon</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t("categories.icon")}</label>
                     <select
                       value={categoryIcon}
                       onChange={(e) => setCategoryIcon(e.target.value)}
@@ -1330,13 +1346,13 @@ export default function DashboardPage() {
                     >
                       {CATEGORY_ICONS.map((iconOption) => (
                         <option key={iconOption.value} value={iconOption.value}>
-                          {iconOption.value} {iconOption.label}
+                          {iconOption.value} {t(iconOption.labelKey)}
                         </option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Color</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t("categories.color")}</label>
                     <div className="flex items-center gap-3">
                       <input
                         type="color"
@@ -1355,13 +1371,13 @@ export default function DashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t("categories.description")}</label>
                   <textarea
                     rows="4"
                     value={categoryDescription}
                     onChange={(e) => setCategoryDescription(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                    placeholder="Meals, groceries and supermarket purchases."
+                    placeholder={t("categories.descriptionPlaceholder")}
                   />
                 </div>
 
@@ -1374,29 +1390,29 @@ export default function DashboardPage() {
                   disabled={categorySubmitting}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
                 >
-                  {categorySubmitting ? "Saving…" : "Create category"}
+                  {categorySubmitting ? t("common.saving") : t("categories.submit")}
                 </button>
               </form>
             </section>
 
             <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-semibold text-gray-900">Available categories</h2>
-                <span className="text-sm text-gray-500">{myCategories.length} mine · {sharedCategories.length} shared</span>
+                <h2 className="text-base font-semibold text-gray-900">{t("categories.available")}</h2>
+                <span className="text-sm text-gray-500">{t("categories.summary", { mine: myCategories.length, shared: sharedCategories.length })}</span>
               </div>
 
               {categories.length === 0 && hiddenCategories.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-8">No categories available yet.</p>
+                <p className="text-sm text-gray-400 text-center py-8">{t("categories.emptyAll")}</p>
               ) : (
                 <div className="space-y-8">
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-semibold text-gray-900">My Categories</h3>
+                      <h3 className="text-sm font-semibold text-gray-900">{t("categories.myCategories")}</h3>
                       <span className="text-xs font-medium uppercase tracking-wide text-gray-400">{myCategories.length}</span>
                     </div>
 
                     {myCategories.length === 0 ? (
-                      <p className="text-sm text-gray-400">You have not created any personal categories yet.</p>
+                      <p className="text-sm text-gray-400">{t("categories.myEmpty")}</p>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {myCategories.map((category) => (
@@ -1414,7 +1430,7 @@ export default function DashboardPage() {
                                 </span>
                                 <div className="min-w-0">
                                   <h3 className="text-sm font-semibold text-gray-900 truncate">{category.name}</h3>
-                                  <p className="text-xs text-gray-500">{category.color || "No color"}</p>
+                                  <p className="text-xs text-gray-500">{category.color || t("categories.noColor")}</p>
                                 </div>
                               </div>
                               {category.description && (
@@ -1428,14 +1444,14 @@ export default function DashboardPage() {
                                 onClick={() => openCategoryEdit(category)}
                                 className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-2.5 rounded-lg hover:bg-white transition-colors"
                               >
-                                Edit
+                                {t("common.edit")}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleCategoryDelete(category.id)}
                                 className="flex-1 bg-red-50 text-red-600 text-sm font-medium py-2.5 rounded-lg hover:bg-red-100 transition-colors"
                               >
-                                Delete
+                                {t("common.delete")}
                               </button>
                             </div>
                           </article>
@@ -1446,12 +1462,12 @@ export default function DashboardPage() {
 
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-semibold text-gray-900">Shared Categories</h3>
+                      <h3 className="text-sm font-semibold text-gray-900">{t("categories.sharedCategories")}</h3>
                       <span className="text-xs font-medium uppercase tracking-wide text-gray-400">{sharedCategories.length}</span>
                     </div>
 
                     {sharedCategories.length === 0 ? (
-                      <p className="text-sm text-gray-400">No shared categories are currently visible.</p>
+                      <p className="text-sm text-gray-400">{t("categories.sharedEmpty")}</p>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {sharedCategories.map((category) => (
@@ -1471,10 +1487,10 @@ export default function DashboardPage() {
                                   <div className="flex items-center gap-2">
                                     <h3 className="text-sm font-semibold text-gray-900 truncate">{category.name}</h3>
                                     <span className="inline-flex items-center rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-700">
-                                      Shared
+                                      {t("categories.sharedBadge")}
                                     </span>
                                   </div>
-                                  <p className="text-xs text-gray-500">{category.color || "No color"}</p>
+                                  <p className="text-xs text-gray-500">{category.color || t("categories.noColor")}</p>
                                 </div>
                               </div>
                               {category.description && (
@@ -1487,7 +1503,7 @@ export default function DashboardPage() {
                               onClick={() => handleHideCategory(category.id)}
                               className="mt-auto w-full border border-amber-300 bg-amber-50 text-amber-700 text-sm font-medium py-2.5 rounded-lg hover:bg-amber-100 transition-colors"
                             >
-                              Hide from my categories
+                              {t("categories.hide")}
                             </button>
                           </article>
                         ))}
@@ -1497,12 +1513,12 @@ export default function DashboardPage() {
 
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-semibold text-gray-900">Hidden Shared Categories</h3>
+                      <h3 className="text-sm font-semibold text-gray-900">{t("categories.hiddenCategories")}</h3>
                       <span className="text-xs font-medium uppercase tracking-wide text-gray-400">{hiddenCategories.length}</span>
                     </div>
 
                     {hiddenCategories.length === 0 ? (
-                      <p className="text-sm text-gray-400">You have not hidden any shared categories.</p>
+                      <p className="text-sm text-gray-400">{t("categories.hiddenEmpty")}</p>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {hiddenCategories.map((category) => (
@@ -1522,10 +1538,10 @@ export default function DashboardPage() {
                                   <div className="flex items-center gap-2">
                                     <h3 className="text-sm font-semibold text-gray-900 truncate">{category.name}</h3>
                                     <span className="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-700">
-                                      Hidden
+                                      {t("categories.hiddenBadge")}
                                     </span>
                                   </div>
-                                  <p className="text-xs text-gray-500">{category.color || "No color"}</p>
+                                  <p className="text-xs text-gray-500">{category.color || t("categories.noColor")}</p>
                                 </div>
                               </div>
                               {category.description && (
@@ -1538,7 +1554,7 @@ export default function DashboardPage() {
                               onClick={() => handleUnhideCategory(category.id)}
                               className="mt-auto w-full border border-gray-300 text-gray-700 text-sm font-medium py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
                             >
-                              Restore to my categories
+                              {t("categories.restore")}
                             </button>
                           </article>
                         ))}
@@ -1556,11 +1572,11 @@ export default function DashboardPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-semibold text-gray-900">Edit expense</h2>
+              <h2 className="text-base font-semibold text-gray-900">{t("expenses.edit.title")}</h2>
               <button
                 onClick={closeEdit}
                 className="text-gray-400 hover:text-gray-600 text-xl leading-none"
-                aria-label="Close"
+                aria-label={t("expenses.edit.closeAria")}
               >
                 ×
               </button>
@@ -1570,7 +1586,7 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Amount <span className="text-red-400">*</span>
+                    {t("expenses.amount")} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="number"
@@ -1584,7 +1600,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Date <span className="text-red-400">*</span>
+                    {t("expenses.date")} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="date"
@@ -1598,13 +1614,13 @@ export default function DashboardPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t("expenses.category")}</label>
                   <select
                     value={editCategoryId}
                     onChange={(e) => setEditCategoryId(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                   >
-                    <option value="">— none —</option>
+                    <option value="">{t("common.none")}</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.icon} {c.name}
@@ -1613,24 +1629,24 @@ export default function DashboardPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Payment</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t("expenses.payment")}</label>
                   <select
                     value={editPaymentMethod}
                     onChange={(e) => setEditPaymentMethod(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                   >
                     {PAYMENT_METHODS.map((m) => (
-                      <option key={m} value={m}>{m}</option>
+                      <option key={m} value={m}>{t(`expenses.paymentMethods.${m}`)}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{t("expenses.description")}</label>
                 <input
                   type="text"
-                  placeholder="e.g. Lunch, Groceries…"
+                  placeholder={t("expenses.descriptionPlaceholder")}
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -1647,14 +1663,14 @@ export default function DashboardPage() {
                   onClick={closeEdit}
                   className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={editSubmitting}
                   className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
                 >
-                  {editSubmitting ? "Saving…" : "Save changes"}
+                  {editSubmitting ? t("expenses.edit.saving") : t("expenses.edit.save")}
                 </button>
               </div>
             </form>
@@ -1666,11 +1682,11 @@ export default function DashboardPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-semibold text-gray-900">Edit category</h2>
+              <h2 className="text-base font-semibold text-gray-900">{t("categories.edit.title")}</h2>
               <button
                 onClick={closeCategoryEdit}
                 className="text-gray-400 hover:text-gray-600 text-xl leading-none"
-                aria-label="Close category editor"
+                aria-label={t("categories.edit.closeAria")}
               >
                 ×
               </button>
@@ -1679,7 +1695,7 @@ export default function DashboardPage() {
             <form onSubmit={handleCategoryUpdate} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Name <span className="text-red-400">*</span>
+                  {t("categories.name")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -1692,7 +1708,7 @@ export default function DashboardPage() {
 
               <div className="grid grid-cols-[140px_minmax(0,1fr)] gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Icon</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t("categories.icon")}</label>
                   <select
                     value={editCategoryIcon}
                     onChange={(e) => setEditCategoryIcon(e.target.value)}
@@ -1700,13 +1716,13 @@ export default function DashboardPage() {
                   >
                     {CATEGORY_ICONS.map((iconOption) => (
                       <option key={iconOption.value} value={iconOption.value}>
-                        {iconOption.value} {iconOption.label}
+                        {iconOption.value} {t(iconOption.labelKey)}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Color</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t("categories.color")}</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
@@ -1725,7 +1741,7 @@ export default function DashboardPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{t("categories.description")}</label>
                 <textarea
                   rows="4"
                   value={editCategoryDescription}
@@ -1744,14 +1760,14 @@ export default function DashboardPage() {
                   onClick={closeCategoryEdit}
                   className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={editCategorySubmitting}
                   className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
                 >
-                  {editCategorySubmitting ? "Saving…" : "Save category"}
+                  {editCategorySubmitting ? t("common.saving") : t("categories.edit.save")}
                 </button>
               </div>
             </form>

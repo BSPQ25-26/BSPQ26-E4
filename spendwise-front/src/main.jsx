@@ -12,6 +12,9 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './index.css'
+// Initialise i18next before the first render so every component can
+// safely call useTranslation() on mount without seeing raw keys.
+import './i18n'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 

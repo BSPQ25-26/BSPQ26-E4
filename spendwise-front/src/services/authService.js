@@ -9,6 +9,8 @@
  * @module services/authService
  */
 
+import i18n from "../i18n";
+
 /**
  * Base URL of the backend API.
  *
@@ -51,7 +53,7 @@ export async function register(email, password, fullName) {
     body: JSON.stringify({ email, password, full_name: fullName }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Registration failed");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.registrationFailed"));
   return data;
 }
 
@@ -70,7 +72,7 @@ export async function login(email, password) {
     body: JSON.stringify({ email, password }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Login failed");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.loginFailed"));
   return data;
 }
 
@@ -90,7 +92,7 @@ export async function getMe(token) {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to fetch profile");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.fetchProfileFailed"));
   return data;
 }
 
@@ -102,6 +104,7 @@ export async function getMe(token) {
  * @param {string} [profileData.full_name] - Display name.
  * @param {string} [profileData.currency] - Preferred currency code (e.g. `"EUR"`).
  * @param {number} [profileData.monthly_income] - Self-reported monthly income.
+ * @param {string} [profileData.language] - Preferred UI language code (`"en"`, `"es"`, `"eu"`).
  * @returns {Promise<Object>} Resolves with the updated profile row.
  * @throws {Error} If the backend rejects the payload.
  */
@@ -112,7 +115,7 @@ export async function updateMe(token, profileData) {
     body: JSON.stringify(profileData),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to update profile");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.updateProfileFailed"));
   return data;
 }
 

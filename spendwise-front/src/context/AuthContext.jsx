@@ -11,6 +11,7 @@
  */
 
 import { createContext, useContext, useState, useEffect } from "react";
+import i18n from "../i18n";
 import { getMe, updateMe, logout as apiLogout } from "../services/authService";
 
 /**
@@ -20,6 +21,7 @@ import { getMe, updateMe, logout as apiLogout } from "../services/authService";
  * @property {string} [full_name] - Display name from the user profile.
  * @property {string} [currency] - Preferred currency code, e.g. `EUR`.
  * @property {number} [monthly_income] - Self-reported monthly income.
+ * @property {string} [language] - Preferred UI language code (`en`, `es`, `eu`).
  */
 
 /**
@@ -83,7 +85,16 @@ export function AuthProvider({ children }) {
       return;
     }
     getMe(token)
-      .then(setUser)
+      .then((profile) => {
+        setUser(profile);
+        // The server-side language preference (when present) wins over
+        // whatever the browser detector picked up, so a user who
+        // configured the language on another device sees the right
+        // UI immediately after logging in here.
+        if (profile?.language && profile.language !== i18n.resolvedLanguage) {
+          i18n.changeLanguage(profile.language);
+        }
+      })
       .catch(() => {
         // Stale or rejected token: drop the local copy so the next
         // render redirects the user to /login.

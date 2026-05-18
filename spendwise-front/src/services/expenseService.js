@@ -9,6 +9,8 @@
  * @module services/expenseService
  */
 
+import i18n from "../i18n";
+
 /**
  * Base URL of the backend API. Reads from the `VITE_API_BASE` build-time
  * env var (set to `/api/v1` in Docker so nginx proxies to the backend),
@@ -103,7 +105,7 @@ export async function getCategories(token) {
     headers: authHeaders(token),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to fetch categories");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.fetchCategoriesFailed"));
   return data;
 }
 
@@ -118,7 +120,7 @@ export async function getHiddenCategories(token) {
     headers: authHeaders(token),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to fetch hidden categories");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.fetchHiddenCategoriesFailed"));
   return data;
 }
 
@@ -136,7 +138,7 @@ export async function createCategory(token, categoryData) {
     body: JSON.stringify(categoryData),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to create category");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.createCategoryFailed"));
   return data;
 }
 
@@ -155,7 +157,7 @@ export async function updateCategory(token, id, categoryData) {
     body: JSON.stringify(categoryData),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to update category");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.updateCategoryFailed"));
   return data;
 }
 
@@ -173,7 +175,7 @@ export async function deleteCategory(token, id) {
   });
   if (!res.ok && res.status !== 204) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "Failed to delete category");
+    throw new Error(data.detail || i18n.t("errors.deleteCategoryFailed"));
   }
 }
 
@@ -191,7 +193,7 @@ export async function hideCategory(token, id) {
   });
   if (!res.ok && res.status !== 204) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "Failed to hide category");
+    throw new Error(data.detail || i18n.t("errors.hideCategoryFailed"));
   }
 }
 
@@ -209,7 +211,7 @@ export async function unhideCategory(token, id) {
   });
   if (!res.ok && res.status !== 204) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "Failed to restore category");
+    throw new Error(data.detail || i18n.t("errors.restoreCategoryFailed"));
   }
 }
 
@@ -234,7 +236,7 @@ export async function getExpenses(token, { month, year, category_id, start_date,
     headers: authHeaders(token),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to fetch expenses");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.fetchExpensesFailed"));
   return data;
 }
 
@@ -263,7 +265,7 @@ export async function getDashboardAnalytics(token, { month, year, category_id, s
     headers: authHeaders(token),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to fetch dashboard analytics");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.fetchAnalyticsFailed"));
   return data;
 }
 
@@ -287,7 +289,7 @@ export async function createExpense(token, expenseData) {
     body: JSON.stringify(expenseData),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to create expense");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.createExpenseFailed"));
   return data;
 }
 
@@ -307,7 +309,7 @@ export async function updateExpense(token, id, expenseData) {
     body: JSON.stringify(expenseData),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to update expense");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.updateExpenseFailed"));
   return data;
 }
 
@@ -327,7 +329,7 @@ export async function deleteExpense(token, id) {
   });
   if (!res.ok && res.status !== 204) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "Failed to delete expense");
+    throw new Error(data.detail || i18n.t("errors.deleteExpenseFailed"));
   }
 }
 
@@ -351,7 +353,7 @@ export async function getDashboardSummary(token, { month, year } = {}) {
     headers: authHeaders(token),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to fetch dashboard summary");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.fetchSummaryFailed"));
   return data;
 }
 
@@ -391,7 +393,7 @@ export async function getAlerts(token) {
     headers: authHeaders(token),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to fetch alerts");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.fetchAlertsFailed"));
   return data;
 }
 
@@ -414,7 +416,7 @@ export async function getAlertStatuses(token, { month, year } = {}) {
     headers: authHeaders(token),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to fetch budget comparison");
+  if (!res.ok) throw new Error(data.detail || i18n.t("errors.fetchAlertStatusesFailed"));
   return data;
 }
 
@@ -443,7 +445,14 @@ export function exportExpensesToCSV(expenses, filename = "spendwise-expenses.xls
   import("xlsx").then(({ utils, write }) => {
     /** Rows as plain JS arrays — SheetJS infers the cell type automatically. */
     const data = [
-      ["ID", "Date", "Amount", "Description", "Category", "Payment Method"],
+      [
+        i18n.t("dashboard.export.headerId"),
+        i18n.t("dashboard.export.headerDate"),
+        i18n.t("dashboard.export.headerAmount"),
+        i18n.t("dashboard.export.headerDescription"),
+        i18n.t("dashboard.export.headerCategory"),
+        i18n.t("dashboard.export.headerPaymentMethod"),
+      ],
       ...expenses.map((expense) => [
         expense.id ?? "",
         expense.expense_date ?? "",
@@ -456,7 +465,7 @@ export function exportExpensesToCSV(expenses, filename = "spendwise-expenses.xls
 
     const worksheet = utils.aoa_to_sheet(data);
     const workbook = utils.book_new();
-    utils.book_append_sheet(workbook, worksheet, "Expenses");
+    utils.book_append_sheet(workbook, worksheet, i18n.t("dashboard.export.sheetName"));
 
     const xlsxBuffer = write(workbook, { bookType: "xlsx", type: "array" });
     const blob = new Blob([xlsxBuffer], {
@@ -489,6 +498,6 @@ export async function dismissAlert(token, alertId) {
   });
   if (!res.ok && res.status !== 204) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "Failed to dismiss alert");
+    throw new Error(data.detail || i18n.t("errors.dismissAlertFailed"));
   }
 }

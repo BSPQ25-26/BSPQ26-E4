@@ -36,6 +36,26 @@ SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_KEY=your_service_key
 ```
 
+## Languages
+
+The frontend supports **English** (default), **Spanish** and **Basque**.
+Users can pick their language from the switcher in the login/register
+pages, the navbar, or the Settings tab. The choice is persisted to
+`localStorage` (`sw_lang` key) and, for authenticated users, also
+synced to the backend so the preference follows the account across
+devices.
+
+To enable backend persistence, run this migration once on the
+`user_profiles` table in Supabase:
+
+```sql
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en';
+```
+
+Without the column, the language switcher still works locally — the
+backend update is best-effort and silently no-ops if the column is
+missing.
+
 ## Testing
 
 ### Backend Tests

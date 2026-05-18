@@ -11,6 +11,17 @@
 import '@testing-library/jest-dom/vitest'
 import { beforeEach, afterEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
+import i18n from '../i18n'
+
+// Force every test to start in English so the existing assertions that
+// match human-readable strings ("Sign in", "Add expense", ...) keep
+// working without having to be rewritten. Tests that need a different
+// language can override this explicitly with i18n.changeLanguage().
+beforeEach(() => {
+  if (i18n.resolvedLanguage !== 'en') {
+    i18n.changeLanguage('en')
+  }
+})
 
 // ---------------------------------------------------------------------------
 // localStorage — stateful in-memory stub
