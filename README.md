@@ -41,6 +41,15 @@ Once the containers report healthy:
 Stop everything with `Ctrl+C` (or `docker compose down` from another
 terminal).
 
+If host port 3000 or 8080 is already taken on your machine, override
+the mapping from the same root `.env` — the container ports stay the
+same internally:
+
+```
+FRONTEND_PORT=3001
+BACKEND_PORT=8081
+```
+
 ## Development mode (hot reload)
 
 Prefer this flow when you are actively writing code — Vite reloads the
