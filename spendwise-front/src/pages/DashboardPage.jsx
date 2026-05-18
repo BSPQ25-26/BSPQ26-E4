@@ -282,7 +282,7 @@ export default function DashboardPage() {
     }
 
     setLoadingExpenses(false);
-  }, [token, month, year, selectedCategory, startDate, endDate]);
+  }, [token, month, year, selectedCategory, startDate, endDate, user?.currency]);
 
   /**
    * Fetch the monthly summary (total + daily average) for the currently
@@ -300,7 +300,7 @@ export default function DashboardPage() {
     } finally {
       setLoadingSummary(false);
     }
-  }, [token, month, year]);
+  }, [token, month, year, user?.currency]);
 
   useEffect(() => {
     if (user) {
@@ -391,6 +391,7 @@ export default function DashboardPage() {
         category_id: categoryId ? parseInt(categoryId) : null,
         expense_date: expenseDate,
         payment_method: paymentMethod,
+        currency: user?.currency || "EUR",
       });
       setAmount("");
       setDescription("");
@@ -471,6 +472,7 @@ export default function DashboardPage() {
         category_id: editCategoryId ? parseInt(editCategoryId) : null,
         expense_date: editDate,
         payment_method: editPaymentMethod,
+        currency: user?.currency || "EUR",
       });
       setExpenses((prev) =>
         prev.map((ex) => (ex.id === updated.id ? { ...ex, ...updated } : ex))
