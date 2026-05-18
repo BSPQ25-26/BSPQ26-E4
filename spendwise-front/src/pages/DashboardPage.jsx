@@ -713,11 +713,12 @@ export default function DashboardPage() {
                       aria-checked={showBudgetComparison}
                       aria-label="Budget comparison"
                       onClick={() => setShowBudgetComparison((prev) => !prev)}
-                      className={`relative inline-flex h-10 w-20 shrink-0 items-center rounded-full border transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                      className={`relative inline-flex h-10 w-20 shrink-0 items-center overflow-hidden border transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
                         showBudgetComparison
                           ? "border-emerald-400 bg-emerald-400"
                           : "border-gray-300 bg-gray-200"
                       }`}
+                      style={{ borderRadius: "9999px" }}
                     >
                       <span
                         className={`inline-block h-9 w-9 transform rounded-full bg-white shadow-md transition-transform duration-200 ${
