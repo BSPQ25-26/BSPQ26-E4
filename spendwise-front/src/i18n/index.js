@@ -4,8 +4,8 @@
  * Initialises the i18next runtime for the SpendWise frontend. The
  * configuration:
  *
- * - Registers the three supported locales: English (default / fallback),
- *   Spanish and Basque.
+ * - Registers the five supported locales: English (default / fallback),
+ *   Spanish, Basque, Polish and French.
  * - Plugs in `i18next-browser-languagedetector` so a returning visitor
  *   keeps the language they last picked. Detection order tries
  *   `localStorage` first, then the browser preference.
@@ -27,6 +27,8 @@ import LanguageDetector from "i18next-browser-languagedetector";
 import en from "./locales/en.json";
 import es from "./locales/es.json";
 import eu from "./locales/eu.json";
+import pl from "./locales/pl.json";
+import fr from "./locales/fr.json";
 
 /**
  * Languages exposed by the {@link LanguageSwitcher} component. Each
@@ -41,6 +43,8 @@ export const SUPPORTED_LANGUAGES = [
   { code: "en", label: "English" },
   { code: "es", label: "Español" },
   { code: "eu", label: "Euskara" },
+  { code: "pl", label: "Polski" },
+  { code: "fr", label: "Français" },
 ];
 
 i18n
@@ -56,10 +60,12 @@ i18n
       en: { translation: en },
       es: { translation: es },
       eu: { translation: eu },
+      pl: { translation: pl },
+      fr: { translation: fr },
     },
-    // English is the source of truth: any key missing from `es`/`eu`
-    // falls back to its English version so the UI never shows a raw
-    // translation key to the user.
+    // English is the source of truth: any key missing from another
+    // locale falls back to its English version so the UI never shows a
+    // raw translation key to the user.
     fallbackLng: "en",
     supportedLngs: SUPPORTED_LANGUAGES.map((l) => l.code),
     // React already escapes by default, so disabling i18next's own

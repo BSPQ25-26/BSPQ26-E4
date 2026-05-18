@@ -41,7 +41,7 @@ describe('LanguageSwitcher', () => {
 
     const select = screen.getByRole('combobox')
     const options = Array.from(select.querySelectorAll('option')).map((o) => o.value)
-    expect(options).toEqual(['en', 'es', 'eu'])
+    expect(options).toEqual(['en', 'es', 'eu', 'pl', 'fr'])
   })
 
   it('changes the active language when a different option is picked', async () => {
