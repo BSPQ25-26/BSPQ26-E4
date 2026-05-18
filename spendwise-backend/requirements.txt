@@ -9,6 +9,7 @@ python-multipart==0.0.9
 supabase
 python-dotenv>=1.0.0
 email-validator>=2.0.0
+requests==2.31.0
 
 # Testing Dependencies
 pytest>=7.4.0
