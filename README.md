@@ -2,9 +2,50 @@
 
 SpendWise is a personal expense tracking application that helps you manage your finances. Track your daily expenses, categorize them, and visualize your spending patterns through interactive charts. Monitor your budget and gain insights into where your money goes each month.
 
-## Setup
+## Quick start (Docker)
 
-### Backend
+The whole stack is dockerised. One command brings up the backend
+(FastAPI + Uvicorn), the frontend (React built by Vite, served by
+nginx) and wires them together so the browser never talks to the
+backend directly — nginx proxies `/api/` to the backend container.
+
+```bash
+# 1. Configure Supabase credentials (only the first time)
+cp .env.example .env
+# then edit .env and fill in real values
+
+# 2. Build and run everything
+docker compose up --build
+```
+
+Once the containers report healthy:
+
+| Service            | URL                                |
+| ------------------ | ---------------------------------- |
+| Frontend           | http://localhost:3000              |
+| Backend (direct)   | http://localhost:8080              |
+| Backend Swagger UI | http://localhost:8080/docs         |
+
+Stop everything with `Ctrl+C` (or `docker compose down` from another
+terminal).
+
+## Development mode (hot reload)
+
+Prefer this flow when you are actively writing code — Vite reloads the
+browser on every save and `uvicorn --reload` restarts the API on every
+Python edit. It needs two terminals, but skips the Docker rebuild
+cycle.
+
+Before either terminal, create `spendwise-backend/.env` with the same
+Supabase keys as above:
+
+```
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_KEY=your_service_key
+```
+
+Backend (terminal 1):
 
 ```bash
 cd spendwise-backend
@@ -12,11 +53,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8080
 ```
 
-API available at:
-- http://localhost:8080
-- http://localhost:8080/docs (Swagger UI)
-
-### Frontend
+Frontend (terminal 2):
 
 ```bash
 cd spendwise-front
@@ -24,17 +61,11 @@ npm install
 npm run dev
 ```
 
-App available at: http://localhost:5173
-
-## Environment Variables
-
-Create a `.env` file in `spendwise-backend/` with:
-
-```
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_KEY=your_service_key
-```
+| Service            | URL                                |
+| ------------------ | ---------------------------------- |
+| Frontend (Vite)    | http://localhost:5173              |
+| Backend            | http://localhost:8080              |
+| Backend Swagger UI | http://localhost:8080/docs         |
 
 ## Languages
 
@@ -65,11 +96,16 @@ pytest tests/ -v
 ```
 
 ### Frontend Tests
+
+Unit + component tests:
+
 ```bash
 cd spendwise-front
 npm test
 ```
-# Test cases from the client side that calls the server
+
+Integration tests (client-side calls hitting the real server):
+
 ```bash
 cd spendwise-front
 npm run test:integration
