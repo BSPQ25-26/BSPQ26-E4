@@ -21,6 +21,7 @@ import {
   updateExpense,
   deleteExpense,
   getDashboardSummary,
+  getAlertStatuses,
   exportExpensesToCSV,
 } from './expenseService'
 
@@ -283,6 +284,43 @@ describe('expenseService', () => {
       expect(result).toEqual(summary)
       const [url] = fetch.mock.calls[0]
       expect(url).toContain('/dashboard/summary?')
+    })
+  })
+
+  describe('getAlertStatuses()', () => {
+    it('fetches budget comparison statuses for the requested period', async () => {
+      const statuses = [
+        {
+          id: 1,
+          category_id: 2,
+          category_name: 'Food',
+          month: 4,
+          year: 2026,
+          limit_amount: 200,
+          spent_amount: 120,
+          remaining_amount: 80,
+          status: 'ok',
+          is_over_limit: false,
+        },
+      ]
+      fetch.mockResolvedValueOnce(fakeResponse({ body: statuses }))
+
+      const result = await getAlertStatuses('tok', { month: 4, year: 2026 })
+
+      expect(result).toEqual(statuses)
+      const [url, init] = fetch.mock.calls[0]
+      expect(url).toContain('/alerts/statuses?')
+      expect(url).toContain('month=4')
+      expect(url).toContain('year=2026')
+      expect(init.headers.Authorization).toBe('Bearer tok')
+    })
+
+    it('throws when the backend rejects the request', async () => {
+      fetch.mockResolvedValueOnce(
+        fakeResponse({ ok: false, status: 500, body: { detail: 'comparison unavailable' } }),
+      )
+
+      await expect(getAlertStatuses('tok', { month: 4, year: 2026 })).rejects.toThrow('comparison unavailable')
     })
   })
 
