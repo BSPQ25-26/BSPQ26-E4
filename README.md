@@ -1,6 +1,8 @@
 # SpendWise
 
-🇬🇧 English &nbsp;·&nbsp; 🇪🇸 Español &nbsp;·&nbsp; 🏴󠁥󠁳󠁰󠁶󠁿 Euskara
+<img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/gb.svg" width="20" alt="English flag"> English &nbsp;·&nbsp;
+<img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/es.svg" width="20" alt="Spanish flag"> Español &nbsp;·&nbsp;
+<img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/es-pv.svg" width="20" alt="Basque flag"> Euskara
 
 SpendWise is a personal expense tracking application that helps you manage your finances. Track your daily expenses, categorize them, and visualize your spending patterns through interactive charts. Monitor your budget and gain insights into where your money goes each month.
 
